@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Mode Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950 p-8">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Dark Mode Test</h1>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                This card should change colors based on dark mode.
+            </p>
+
+            <button
+                onclick="toggleDarkMode()"
+                class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+            >
+                Toggle Dark Mode
+            </button>
+        </div>
+
+        <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded">
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                Current HTML class: <span id="classDisplay" class="font-mono"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function updateDisplay() {
+            document.getElementById('classDisplay').textContent = document.documentElement.className || '(none)';
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+            } else {
+                html.classList.add('dark');
+            }
+            updateDisplay();
+            console.log('Dark mode toggled. Current class:', html.className);
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>

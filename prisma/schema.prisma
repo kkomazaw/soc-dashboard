@@ -1,0 +1,168 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// CISA KEV (Known Exploited Vulnerabilities)
+model CisaKev {
+  id                            Int       @id @default(autoincrement())
+  cveId                         String    @unique @map("cve_id")
+  vendorProject                 String?   @map("vendor_project")
+  product                       String?
+  vulnerabilityName             String?   @map("vulnerability_name")
+  dateAdded                     DateTime  @map("date_added")
+  shortDescription              String?   @map("short_description")
+  requiredAction                String?   @map("required_action")
+  dueDate                       DateTime? @map("due_date")
+  knownRansomwareCampaignUse    Boolean?  @map("known_ransomware_campaign_use")
+  notes                         String?
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+
+  @@index([cveId])
+  @@index([dateAdded])
+  @@map("cisa_kev")
+}
+
+// JVN Vulnerabilities
+model JvnVulnerability {
+  id                Int       @id @default(autoincrement())
+  jvnId             String    @unique @map("jvn_id")
+  cveId             String?   @map("cve_id")
+  title             String
+  summary           String?
+  severity          String?
+  cvssScore         Float?    @map("cvss_score")
+  cvssVector        String?   @map("cvss_vector")
+  publishedDate     DateTime? @map("published_date")
+  lastModifiedDate  DateTime? @map("last_modified_date")
+  affectedProducts  String?   @map("affected_products") // JSON string
+  references        String?   // JSON string
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([jvnId])
+  @@index([cveId])
+  @@index([publishedDate])
+  @@map("jvn_vulnerabilities")
+}
+
+// News Articles
+model NewsArticle {
+  id             Int       @id @default(autoincrement())
+  guid           String    @unique
+  title          String
+  link           String
+  description    String?
+  content        String?
+  author         String?
+  source         String    // 'bleepingcomputer', 'thehackernews', etc.
+  category       String?   // 'vulnerability', 'ransomware', 'apt', etc.
+  publishedDate  DateTime  @map("published_date")
+  isRead         Boolean   @default(false) @map("is_read")
+  isStarred      Boolean   @default(false) @map("is_starred")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([source])
+  @@index([category])
+  @@index([publishedDate])
+  @@index([isRead])
+  @@map("news_articles")
+}
+
+// NVD CVE Data
+model NvdCve {
+  id                Int       @id @default(autoincrement())
+  cveId             String    @unique @map("cve_id")
+  sourceIdentifier  String?   @map("source_identifier")
+  published         DateTime
+  lastModified      DateTime  @map("last_modified")
+  vulnStatus        String?   @map("vuln_status")
+  description       String?
+  cvssScore         Float?    @map("cvss_score")
+  cvssSeverity      String?   @map("cvss_severity")
+  cvssVector        String?   @map("cvss_vector")
+  cvssVersion       String?   @map("cvss_version")
+  weaknesses        String?   // JSON string array of CWE IDs
+  references        String?   // JSON string array of reference URLs
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([cveId])
+  @@index([published])
+  @@index([cvssScore])
+  @@map("nvd_cves")
+}
+
+// MITRE ATT&CK Techniques
+model AttackTechnique {
+  id                  Int       @id @default(autoincrement())
+  techniqueId         String    @unique @map("technique_id") // T1566, T1070, etc.
+  name                String
+  description         String?
+  tactics             String?   // JSON string array
+  platforms           String?   // JSON string array
+  dataSource          String?   @map("data_source") // JSON string array
+  detectionDifficulty String?   @map("detection_difficulty")
+  url                 String?
+  mitigations         String?   // JSON string array
+  subtechniques       String?   // JSON string array
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([techniqueId])
+  @@map("attack_techniques")
+}
+
+// MITRE ATT&CK Tactics
+model AttackTactic {
+  id          Int       @id @default(autoincrement())
+  tacticId    String    @unique @map("tactic_id") // TA0001, TA0002, etc.
+  name        String
+  description String?
+  shortName   String    @map("short_name") // initial-access, execution, etc.
+  techniques  String?   // JSON string array of technique IDs
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([tacticId])
+  @@index([shortName])
+  @@map("attack_tactics")
+}
+
+// CVE to ATT&CK Technique Mapping
+model CveAttackMapping {
+  id           Int      @id @default(autoincrement())
+  cveId        String   @map("cve_id") // CVE-2024-1234
+  techniqueId  String   @map("technique_id") // T1566
+  source       String   // 'cisa', 'jvn', 'nvd'
+  confidence   String   @default("medium") // 'high', 'medium', 'low'
+  matchType    String   @map("match_type") // 'keyword', 'tactic', 'manual'
+  matchDetails String?  @map("match_details") // JSON string with match information
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([cveId, techniqueId, source])
+  @@index([cveId])
+  @@index([techniqueId])
+  @@index([source])
+  @@map("cve_attack_mappings")
+}
+
+// App Settings
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String?
+  type      String   @default("string") // 'string', 'number', 'boolean', 'json'
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@map("app_settings")
+}
