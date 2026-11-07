@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { prisma } from '../services/database/prismaClient'
+import { fetchRedHatCVE } from '../services/fetchers/redhatFetcher'
 
 export interface TimelineEvent {
   date: string
@@ -127,11 +128,61 @@ export const getCveTimeline = async (req: Request, res: Response) => {
     }
 
     // 4. Check Red Hat CVE data
-    const redhatCve = await prisma.redHatCve.findFirst({
+    let redhatCve = await prisma.redHatCve.findFirst({
       where: { cveId: normalizedCveId },
     })
 
-    if (redhatCve) {
+    // If not in database, try fetching from Red Hat API directly
+    if (!redhatCve) {
+      try {
+        const apiData = await fetchRedHatCVE(normalizedCveId)
+        if (apiData) {
+          // Use the API data directly without saving to database
+          const publicDate = apiData.public_date ? new Date(apiData.public_date) : new Date()
+          timeline.push({
+            date: publicDate.toISOString(),
+            type: 'advisory',
+            source: 'redhat',
+            title: 'Red Hat CVE Published',
+            description: apiData.bugzilla?.description || undefined,
+            severity: apiData.severity?.toUpperCase() || apiData.threat_severity?.toUpperCase() || undefined,
+            cvssScore: parseFloat(apiData.cvss3?.cvss3_base_score || apiData.cvss?.cvss_base_score || '0') || undefined,
+            url: apiData.resource_url || `https://access.redhat.com/security/cve/${normalizedCveId}`,
+          })
+
+          // Add affected release advisories
+          if (apiData.affected_release && Array.isArray(apiData.affected_release)) {
+            for (const release of apiData.affected_release) {
+              if (release.advisory && release.release_date) {
+                timeline.push({
+                  date: new Date(release.release_date).toISOString(),
+                  type: 'advisory',
+                  source: 'redhat',
+                  title: `Red Hat Advisory: ${release.advisory}`,
+                  description: `${release.product_name} - ${release.package || ''}`,
+                  severity: release.impact?.toUpperCase() || apiData.threat_severity?.toUpperCase() || undefined,
+                  url: `https://access.redhat.com/errata/${release.advisory}`,
+                  advisoryId: release.advisory,
+                })
+              }
+            }
+          }
+
+          // Mark that we found it in Red Hat (for the summary)
+          redhatCve = {
+            publicDate,
+            severity: apiData.severity,
+            cvss3Score: apiData.cvss3?.cvss3_base_score || null,
+            cvssScore: apiData.cvss?.cvss_base_score || null,
+            bugzillaDesc: apiData.bugzilla?.description || null,
+            resourceUrl: apiData.resource_url || null,
+          } as any
+        }
+      } catch (error) {
+        // Silently continue if Red Hat API fetch fails
+        console.log(`Could not fetch ${normalizedCveId} from Red Hat API`)
+      }
+    } else {
       timeline.push({
         date: redhatCve.publicDate.toISOString(),
         type: 'advisory',

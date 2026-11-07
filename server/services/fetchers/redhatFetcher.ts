@@ -20,32 +20,41 @@ export interface RedHatAdvisory {
 
 export interface RedHatCVE {
   CVE: string
-  severity: string
+  severity?: string
+  threat_severity?: string
   public_date: string
-  advisories: string[]
-  bugzilla: {
+  advisories?: string[]
+  bugzilla?: {
     description: string
     id: string
     url: string
   }
-  cvss: {
+  cvss?: {
     cvss_base_score: string
     cvss_scoring_vector: string
     status: string
   }
-  cvss3: {
+  cvss3?: {
     cvss3_base_score: string
     cvss3_scoring_vector: string
     status: string
   }
-  cwe: string
-  details: string[]
-  affected_packages: Array<{
+  cwe?: string
+  details?: string[]
+  affected_packages?: Array<{
     cpe: string
     name: string
     version: string
   }>
-  resource_url: string
+  affected_release?: Array<{
+    product_name: string
+    release_date: string
+    advisory: string
+    cpe: string
+    package: string
+    impact?: string
+  }>
+  resource_url?: string
   upstream_fix?: string
   references?: string[]
 }
