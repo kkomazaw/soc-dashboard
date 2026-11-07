@@ -1,6 +1,6 @@
 import { useCisaKev } from '@/hooks/useVulnerabilities'
 import type { CisaKevItem } from '@/types/vulnerability'
-import { AlertCircle, Calendar, Clock } from 'lucide-react'
+import { AlertCircle, Calendar, Clock, ExternalLink } from 'lucide-react'
 import { ExportButton } from '../common/ExportButton'
 import { exportCisaKev } from '@/services/api/exportApi'
 
@@ -82,17 +82,23 @@ export const CisaKevList = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      <a
+                        href={`https://nvd.nist.gov/vuln/detail/${item.cveId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                      >
                         {item.cveId}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {item.vendorProject} - {item.product}
                       </div>
                       <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                         {item.vulnerabilityName}
                       </div>
                     </div>
-                    <div className="text-right text-sm">
+                    <div className="text-right text-sm flex-shrink-0 ml-4">
                       <div className="text-gray-600 dark:text-gray-400">
                         追加: {formatDate(item.dateAdded)}
                       </div>
@@ -133,8 +139,16 @@ export const CisaKevList = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {displayItems.map((item) => (
                 <tr key={item.cveId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {item.cveId}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a
+                      href={`https://nvd.nist.gov/vuln/detail/${item.cveId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                    >
+                      {item.cveId}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                     <div>{item.vendorProject}</div>

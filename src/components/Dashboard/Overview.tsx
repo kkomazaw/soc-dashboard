@@ -10,6 +10,7 @@ import {
   Clock,
   AlertCircle,
   BarChart3,
+  ExternalLink,
 } from 'lucide-react'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
@@ -457,15 +458,21 @@ export const Overview = () => {
                   className="border-l-4 border-red-500 pl-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <a
+                        href={`https://nvd.nist.gov/vuln/detail/${vuln.cveId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm inline-flex items-center gap-1"
+                      >
                         {vuln.cveId}
-                      </div>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
                       <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
                         {vuln.vendorProject} - {vuln.product}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
                       <Clock className="w-3 h-3" />
                       {formatDate(vuln.dateAdded)}
                     </div>

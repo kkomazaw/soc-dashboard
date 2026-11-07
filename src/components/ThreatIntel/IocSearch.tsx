@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, AlertCircle, CheckCircle, XCircle, Loader2, Shield } from 'lucide-react'
+import { Search, AlertCircle, CheckCircle, XCircle, Loader2, Shield, ExternalLink } from 'lucide-react'
 import {
   searchFileHash,
   searchUrl,
@@ -236,10 +236,19 @@ const IocSearch = () => {
       {/* IP Address Result */}
       {ipResult && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               IP Address Reputation Report
             </h3>
+            <a
+              href={`https://www.abuseipdb.com/check/${ipResult.ipAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View on AbuseIPDB
+            </a>
           </div>
           <div className="p-6 space-y-6">
             {/* Score Card */}
@@ -344,8 +353,17 @@ const IocSearch = () => {
       {/* File Hash Result */}
       {hashResult && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">File Analysis Report</h3>
+            <a
+              href={`https://www.virustotal.com/gui/file/${hashResult.sha256}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View on VirusTotal
+            </a>
           </div>
           <div className="p-6 space-y-6">
             {/* Detection Stats */}
@@ -443,8 +461,17 @@ const IocSearch = () => {
       {/* URL Result */}
       {urlResult && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">URL Analysis Report</h3>
+            <a
+              href={`https://www.virustotal.com/gui/search/${encodeURIComponent(urlResult.url)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View on VirusTotal
+            </a>
           </div>
           <div className="p-6 space-y-6">
             {/* Detection Stats */}
