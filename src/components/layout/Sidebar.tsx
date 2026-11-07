@@ -12,6 +12,7 @@ const menuItems = [
     { id: 'cisa-kev', label: 'CISA KEV' },
     { id: 'jvn', label: 'JVN' },
     { id: 'nvd', label: 'NVD' },
+    { id: 'redhat', label: 'Red Hat Security' },
   ]},
   { id: 'vulnerability-trends', label: 'トレンド分析', icon: TrendingUp },
   { id: 'enhanced-analytics', label: '高度な分析', icon: BarChart3 },

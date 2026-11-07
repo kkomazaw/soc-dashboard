@@ -154,6 +154,55 @@ model CveAttackMapping {
   @@map("cve_attack_mappings")
 }
 
+// Red Hat Security Advisories
+model RedHatAdvisory {
+  id                Int       @id @default(autoincrement())
+  advisoryId        String    @unique @map("advisory_id") // RHSA-2024:0001
+  advisoryType      String    @map("advisory_type") // RHSA, RHBA, RHEA
+  severity          String?   // Critical, Important, Moderate, Low
+  synopsis          String
+  description       String?
+  publicDate        DateTime  @map("public_date")
+  cves              String?   // JSON string array of CVE IDs
+  affectedPackages  String?   @map("affected_packages") // JSON string array
+  bugzilla          String?   // JSON string array of bugzilla entries
+  resourceUrl       String?   @map("resource_url")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([advisoryId])
+  @@index([publicDate])
+  @@index([severity])
+  @@map("redhat_advisories")
+}
+
+// Red Hat CVE Data
+model RedHatCve {
+  id                Int       @id @default(autoincrement())
+  cveId             String    @unique @map("cve_id")
+  severity          String?
+  publicDate        DateTime  @map("public_date")
+  advisories        String?   // JSON string array of advisory IDs
+  bugzillaId        String?   @map("bugzilla_id")
+  bugzillaDesc      String?   @map("bugzilla_desc")
+  cvssScore         String?   @map("cvss_score")
+  cvssVector        String?   @map("cvss_vector")
+  cvss3Score        String?   @map("cvss3_score")
+  cvss3Vector       String?   @map("cvss3_vector")
+  cwe               String?
+  details           String?   // JSON string array
+  affectedPackages  String?   @map("affected_packages") // JSON string
+  resourceUrl       String?   @map("resource_url")
+  references        String?   // JSON string array
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([cveId])
+  @@index([publicDate])
+  @@index([severity])
+  @@map("redhat_cves")
+}
+
 // App Settings
 model AppSetting {
   id        Int      @id @default(autoincrement())

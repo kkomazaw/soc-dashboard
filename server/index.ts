@@ -6,6 +6,7 @@ import newsRouter from './routes/news'
 import iocRouter from './routes/ioc'
 import jvnRouter from './routes/jvn'
 import nvdRouter from './routes/nvd'
+import redhatRouter from './routes/redhat'
 import attackRouter from './routes/attack'
 import exportRouter from './routes/export'
 import mappingRouter from './routes/mapping'
@@ -26,6 +27,7 @@ app.use('/api/news', newsRouter)
 app.use('/api/ioc', iocRouter)
 app.use('/api/jvn', jvnRouter)
 app.use('/api/nvd', nvdRouter)
+app.use('/api/redhat', redhatRouter)
 app.use('/api/attack', attackRouter)
 app.use('/api/export', exportRouter)
 app.use('/api/mapping', mappingRouter)
@@ -50,6 +52,11 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/nvd/status`)
   console.log(`   - GET  /api/nvd/search/:cveId`)
   console.log(`   - POST /api/nvd/refresh`)
+  console.log(`   - GET  /api/redhat/advisories`)
+  console.log(`   - GET  /api/redhat/cves`)
+  console.log(`   - GET  /api/redhat/stats`)
+  console.log(`   - GET  /api/redhat/all`)
+  console.log(`   - POST /api/redhat/refresh`)
   console.log(`   - GET  /api/attack/techniques`)
   console.log(`   - GET  /api/attack/tactics`)
   console.log(`   - GET  /api/attack/matrix`)

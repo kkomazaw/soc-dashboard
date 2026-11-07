@@ -13,6 +13,7 @@ const Overview = lazy(() => import('./components/Dashboard/Overview').then(m => 
 const CisaKevList = lazy(() => import('./components/Vulnerabilities/CisaKevList').then(m => ({ default: m.CisaKevList })))
 const JvnList = lazy(() => import('./components/Vulnerabilities/JvnList').then(m => ({ default: m.JvnList })))
 const NvdList = lazy(() => import('./components/Vulnerabilities/NvdList').then(m => ({ default: m.NvdList })))
+const RedHatSecurityList = lazy(() => import('./components/Vulnerabilities/RedHatSecurityList').then(m => ({ default: m.RedHatSecurityList })))
 const NewsFeed = lazy(() => import('./components/News/NewsFeed').then(m => ({ default: m.NewsFeed })))
 const IocSearch = lazy(() => import('./components/ThreatIntel/IocSearch'))
 const AttackMatrix = lazy(() => import('./components/ThreatIntel/AttackMatrix').then(m => ({ default: m.AttackMatrix })))
@@ -53,6 +54,8 @@ function AppContent() {
         return <JvnList />
       case 'nvd':
         return <NvdList />
+      case 'redhat':
+        return <RedHatSecurityList />
       case 'global-search':
         return <GlobalSearch />
       case 'vulnerability-trends':
