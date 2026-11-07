@@ -4,7 +4,7 @@ import { getListTweets, type Tweet, RateLimitError, CreditsDepletedError } from 
 import { useState, useEffect } from 'react'
 
 // Twitter List URL for the security accounts feed
-const TWITTER_LIST_URL = 'https://twitter.com/eC4ve/lists/threat-intelligence'
+const TWITTER_LIST_URL = 'https://x.com/i/lists/2117533181436158234'
 
 const formatRelativeTime = (dateString: string) => {
   const date = new Date(dateString)

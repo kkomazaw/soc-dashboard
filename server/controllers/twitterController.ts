@@ -78,7 +78,7 @@ export const getListTweets = async (req: Request, res: Response) => {
     }
 
     // 本物のAPI
-    const listId = '1303108955514777600' // threat-intelligence list ID
+    const listId = '2117533181436158234' // Security information list ID
     const client = getTwitterClient()
 
     // リストのツイートを取得
@@ -172,7 +172,7 @@ export const getListTweets = async (req: Request, res: Response) => {
 // リスト情報を取得
 export const getListInfo = async (req: Request, res: Response) => {
   try {
-    const listId = '1303108955514777600'
+    const listId = '2117533181436158234'
 
     const client = getTwitterClient()
 
