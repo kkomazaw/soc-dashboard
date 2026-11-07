@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { prisma } from '../services/database/prismaClient'
 import { fetchRedHatCVE } from '../services/fetchers/redhatFetcher'
 import { fetchCveById, extractDescription, extractCvssData } from '../services/fetchers/nvdFetcher'
+import { fetchJvnByCveId } from '../services/fetchers/jvnFetcher'
 
 export interface TimelineEvent {
   date: string
@@ -140,40 +141,74 @@ export const getCveTimeline = async (req: Request, res: Response) => {
     }
 
     // 3. Check JVN data
-    const jvnData = await prisma.jvnVulnerability.findMany({
+    let jvnData = await prisma.jvnVulnerability.findMany({
       where: {
         OR: [
           { jvnId: { contains: normalizedCveId } },
           { cveId: normalizedCveId },
+          { title: { contains: normalizedCveId } },
         ],
       },
     })
 
-    for (const jvn of jvnData) {
-      if (jvn.publishedDate) {
-        timeline.push({
-          date: jvn.publishedDate.toISOString(),
-          type: 'advisory',
-          source: 'jvn',
-          title: `JVN Advisory: ${jvn.jvnId}`,
-          description: jvn.title || undefined,
-          severity: jvn.severity || undefined,
-          cvssScore: jvn.cvssScore || undefined,
-          url: `https://jvn.jp/en/jp/${jvn.jvnId}/`,
-          advisoryId: jvn.jvnId,
-        })
-      }
+    // If not in database, try fetching from JVN API directly
+    if (jvnData.length === 0) {
+      try {
+        const apiData = await fetchJvnByCveId(normalizedCveId)
+        if (apiData) {
+          const publishedDate = new Date(apiData.pubDate)
+          timeline.push({
+            date: publishedDate.toISOString(),
+            type: 'advisory',
+            source: 'jvn',
+            title: `JVN Advisory: ${apiData.identifier}`,
+            description: apiData.title || undefined,
+            severity: apiData.severity || undefined,
+            cvssScore: apiData.cvssScore || undefined,
+            url: apiData.link || `https://jvn.jp/`,
+            advisoryId: apiData.identifier,
+          })
 
-      if (jvn.lastModifiedDate && jvn.publishedDate && jvn.lastModifiedDate.getTime() !== jvn.publishedDate.getTime()) {
-        timeline.push({
-          date: jvn.lastModifiedDate.toISOString(),
-          type: 'updated',
-          source: 'jvn',
-          title: `JVN Advisory Updated: ${jvn.jvnId}`,
-          description: 'Advisory information updated',
-          severity: jvn.severity || undefined,
-          url: `https://jvn.jp/en/jp/${jvn.jvnId}/`,
-        })
+          // Mark that we found it in JVN (for the summary)
+          jvnData = [{
+            publishedDate,
+            jvnId: apiData.identifier,
+            title: apiData.title,
+            severity: apiData.severity,
+            cvssScore: apiData.cvssScore,
+          } as any]
+        }
+      } catch (error) {
+        // Silently continue if JVN API fetch fails
+        console.log(`Could not fetch ${normalizedCveId} from JVN API`)
+      }
+    } else {
+      for (const jvn of jvnData) {
+        if (jvn.publishedDate) {
+          timeline.push({
+            date: jvn.publishedDate.toISOString(),
+            type: 'advisory',
+            source: 'jvn',
+            title: `JVN Advisory: ${jvn.jvnId}`,
+            description: jvn.title || undefined,
+            severity: jvn.severity || undefined,
+            cvssScore: jvn.cvssScore || undefined,
+            url: `https://jvn.jp/en/jp/${jvn.jvnId}/`,
+            advisoryId: jvn.jvnId,
+          })
+        }
+
+        if (jvn.lastModifiedDate && jvn.publishedDate && jvn.lastModifiedDate.getTime() !== jvn.publishedDate.getTime()) {
+          timeline.push({
+            date: jvn.lastModifiedDate.toISOString(),
+            type: 'updated',
+            source: 'jvn',
+            title: `JVN Advisory Updated: ${jvn.jvnId}`,
+            description: 'Advisory information updated',
+            severity: jvn.severity || undefined,
+            url: `https://jvn.jp/en/jp/${jvn.jvnId}/`,
+          })
+        }
       }
     }
 
