@@ -171,91 +171,104 @@ export const GlobalSearch = () => {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+          <Search className="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400" />
+          グローバル検索
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          すべての脆弱性データソースを横断検索
+        </p>
+      </div>
+
       {/* Search Bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={filters.query}
-            onChange={(e) => updateFilters({ query: e.target.value })}
-            placeholder="Search vulnerabilities, CVE IDs, vendors, products..."
-            className="w-full pl-10 pr-10 py-3 bg-gray-800 text-gray-100 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-          />
-          {filters.query && (
-            <button
-              onClick={() => updateFilters({ query: '' })}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              value={filters.query}
+              onChange={(e) => updateFilters({ query: e.target.value })}
+              placeholder="脆弱性、CVE ID、ベンダー、製品を検索..."
+              className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 placeholder-gray-400 dark:placeholder-gray-500"
+            />
+            {filters.query && (
+              <button
+                onClick={() => updateFilters({ query: '' })}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+              showFilters
+                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Filter className="w-5 h-5" />
+            フィルター
+          </button>
+
+          <button
+            onClick={() => setShowPresets(!showPresets)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+              showPresets
+                ? 'bg-purple-600 dark:bg-purple-700 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Bookmark className="w-5 h-5" />
+            プリセット
+          </button>
         </div>
-
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-            showFilters
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-          }`}
-        >
-          <Filter className="w-5 h-5" />
-          Filters
-        </button>
-
-        <button
-          onClick={() => setShowPresets(!showPresets)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-            showPresets
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-          }`}
-        >
-          <Bookmark className="w-5 h-5" />
-          Presets
-        </button>
       </div>
 
       {/* Advanced Filters Panel */}
       {showFilters && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
           <AdvancedFilters />
         </div>
       )}
 
       {/* Filter Presets Panel */}
       {showPresets && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
           <FilterPresets />
         </div>
       )}
 
       {/* Results */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg">
-        <div className="p-4 border-b border-gray-800">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Search className="w-5 h-5" />
-            Search Results
-            <span className="text-sm font-normal text-gray-400">
-              ({searchResults.length} {searchResults.length === 100 ? '+ ' : ''}results)
+            検索結果
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              ({searchResults.length} {searchResults.length === 100 ? '+ ' : ''}件)
             </span>
           </h3>
         </div>
 
         <div className="max-h-[600px] overflow-y-auto">
           {searchResults.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-12 text-center text-gray-500 dark:text-gray-400">
               <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-lg">No results found</p>
-              <p className="text-sm mt-1">Try adjusting your search query or filters</p>
+              <p className="text-lg">検索結果がありません</p>
+              <p className="text-sm mt-1">検索クエリまたはフィルターを調整してください</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-800">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {searchResults.map((result) => (
                 <div
                   key={`${result.source}-${result.id}`}
-                  className="p-4 hover:bg-gray-800 transition-colors cursor-pointer"
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -267,18 +280,18 @@ export const GlobalSearch = () => {
                           {result.severity}
                         </span>
                         {result.cveId && (
-                          <span className="text-xs font-mono text-blue-400">{result.cveId}</span>
+                          <span className="text-xs font-mono text-blue-600 dark:text-blue-400">{result.cveId}</span>
                         )}
                         {result.cvssScore !== undefined && (
-                          <span className="text-xs text-gray-400">CVSS: {result.cvssScore.toFixed(1)}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">CVSS: {result.cvssScore.toFixed(1)}</span>
                         )}
                       </div>
-                      <h4 className="font-semibold text-white mb-1">{result.title}</h4>
-                      <p className="text-sm text-gray-400 line-clamp-2">{result.description}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span>{new Date(result.publishedDate).toLocaleDateString()}</span>
-                        {result.vendor && <span>Vendor: {result.vendor}</span>}
-                        {result.product && <span>Product: {result.product}</span>}
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{result.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{result.description}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-500">
+                        <span>{new Date(result.publishedDate).toLocaleDateString('ja-JP')}</span>
+                        {result.vendor && <span>ベンダー: {result.vendor}</span>}
+                        {result.product && <span>製品: {result.product}</span>}
                       </div>
                     </div>
                   </div>
