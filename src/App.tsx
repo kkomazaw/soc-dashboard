@@ -20,6 +20,7 @@ const AttackMatrix = lazy(() => import('./components/ThreatIntel/AttackMatrix').
 const VulnerabilityTrends = lazy(() => import('./components/Analytics/VulnerabilityTrends').then(m => ({ default: m.VulnerabilityTrends })))
 const EnhancedDashboard = lazy(() => import('./components/Analytics/EnhancedDashboard').then(m => ({ default: m.EnhancedDashboard })))
 const GlobalSearch = lazy(() => import('./components/Search/GlobalSearch').then(m => ({ default: m.GlobalSearch })))
+const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').then(m => ({ default: m.CVETimeline })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,8 @@ function AppContent() {
         return <RedHatSecurityList />
       case 'global-search':
         return <GlobalSearch />
+      case 'cve-timeline':
+        return <CVETimeline />
       case 'vulnerability-trends':
         return <VulnerabilityTrends />
       case 'enhanced-analytics':

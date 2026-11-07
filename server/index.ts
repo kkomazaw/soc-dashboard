@@ -12,6 +12,7 @@ import exportRouter from './routes/export'
 import mappingRouter from './routes/mapping'
 import analyticsRouter from './routes/analytics'
 import twitterRouter from './routes/twitter'
+import cveTimelineRouter from './routes/cveTimeline'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -33,6 +34,7 @@ app.use('/api/export', exportRouter)
 app.use('/api/mapping', mappingRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/twitter', twitterRouter)
+app.use('/api/cve', cveTimelineRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -80,6 +82,8 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/export/news/csv`)
   console.log(`   - GET  /api/twitter/list/tweets`)
   console.log(`   - GET  /api/twitter/list/info`)
+  console.log(`   - GET  /api/cve/search?query=keyword`)
+  console.log(`   - GET  /api/cve/:cveId/timeline`)
   console.log(`   - GET  /health`)
   console.log('')
 
