@@ -10,6 +10,7 @@ import attackRouter from './routes/attack'
 import exportRouter from './routes/export'
 import mappingRouter from './routes/mapping'
 import analyticsRouter from './routes/analytics'
+import twitterRouter from './routes/twitter'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -29,6 +30,7 @@ app.use('/api/attack', attackRouter)
 app.use('/api/export', exportRouter)
 app.use('/api/mapping', mappingRouter)
 app.use('/api/analytics', analyticsRouter)
+app.use('/api/twitter', twitterRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -69,6 +71,8 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/export/attack/csv`)
   console.log(`   - GET  /api/export/attack/pdf`)
   console.log(`   - GET  /api/export/news/csv`)
+  console.log(`   - GET  /api/twitter/list/tweets`)
+  console.log(`   - GET  /api/twitter/list/info`)
   console.log(`   - GET  /health`)
   console.log('')
 
@@ -77,6 +81,7 @@ app.listen(PORT, () => {
   console.log(`   - VirusTotal: ${process.env.VIRUSTOTAL_API_KEY ? '✅ Configured' : '❌ Not configured'}`)
   console.log(`   - AbuseIPDB: ${process.env.ABUSEIPDB_API_KEY ? '✅ Configured' : '❌ Not configured'}`)
   console.log(`   - NVD: ${process.env.NVD_API_KEY ? '✅ Configured' : '⚠️  Not configured (using public API with limits)'}`)
+  console.log(`   - Twitter: ${process.env.TWITTER_BEARER_TOKEN ? '✅ Configured' : '❌ Not configured'}`)
   console.log('')
 
   // Initialize automatic data synchronization
