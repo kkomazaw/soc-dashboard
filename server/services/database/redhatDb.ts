@@ -199,50 +199,50 @@ export const getRedHatStats = async () => {
   // Count by severity (for advisories)
   const criticalAdvisories = await prisma.redHatAdvisory.count({
     where: {
-      severity: { equals: 'Critical', mode: 'insensitive' },
+      severity: 'critical',
     },
   })
 
   const importantAdvisories = await prisma.redHatAdvisory.count({
     where: {
-      severity: { equals: 'Important', mode: 'insensitive' },
+      severity: 'important',
     },
   })
 
   const moderateAdvisories = await prisma.redHatAdvisory.count({
     where: {
-      severity: { equals: 'Moderate', mode: 'insensitive' },
+      severity: 'moderate',
     },
   })
 
   const lowAdvisories = await prisma.redHatAdvisory.count({
     where: {
-      severity: { equals: 'Low', mode: 'insensitive' },
+      severity: 'low',
     },
   })
 
   // Count by severity (for CVEs)
   const criticalCVEs = await prisma.redHatCve.count({
     where: {
-      severity: { equals: 'Critical', mode: 'insensitive' },
+      severity: 'critical',
     },
   })
 
   const importantCVEs = await prisma.redHatCve.count({
     where: {
-      severity: { equals: 'Important', mode: 'insensitive' },
+      severity: 'important',
     },
   })
 
   const moderateCVEs = await prisma.redHatCve.count({
     where: {
-      severity: { equals: 'Moderate', mode: 'insensitive' },
+      severity: 'moderate',
     },
   })
 
   const lowCVEs = await prisma.redHatCve.count({
     where: {
-      severity: { equals: 'Low', mode: 'insensitive' },
+      severity: 'low',
     },
   })
 
