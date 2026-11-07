@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const REDHAT_API_BASE = 'https://access.redhat.com/labs/securitydataapi'
+const REDHAT_API_BASE = 'https://access.redhat.com/hydra/rest/securitydata'
 
 export interface RedHatAdvisory {
   id: string // e.g., RHSA-2024:0001
@@ -57,39 +57,57 @@ interface AdvisoryApiResponse {
 }
 
 /**
- * Fetch Red Hat Security Advisories (RHSA)
+ * Fetch Red Hat Security Advisories (RHSA) - extracted from CVE data
  * @param days Number of days to look back (default: 30)
  */
 export const fetchRedHatAdvisories = async (days: number = 30): Promise<RedHatAdvisory[]> => {
   try {
-    const afterDate = new Date()
-    afterDate.setDate(afterDate.getDate() - days)
-    const afterDateStr = afterDate.toISOString().split('T')[0]
+    // Red Hat doesn't provide a direct advisory list endpoint
+    // We'll extract advisory information from CVE data
+    const cves = await fetchRedHatCVEs(days)
 
-    console.log(`Fetching Red Hat Security Advisories from ${afterDateStr}...`)
+    // Create a map of unique advisories
+    const advisoryMap = new Map<string, RedHatAdvisory>()
 
-    const response = await axios.get<AdvisoryApiResponse>(`${REDHAT_API_BASE}/advisory.json`, {
-      params: {
-        after: afterDateStr,
-      },
-      timeout: 30000,
-    })
+    for (const cve of cves) {
+      if (cve.advisories && cve.advisories.length > 0) {
+        for (const advisoryId of cve.advisories) {
+          if (!advisoryMap.has(advisoryId)) {
+            // Determine advisory type from ID
+            let type = 'RHSA'
+            if (advisoryId.startsWith('RHBA-')) type = 'RHBA'
+            else if (advisoryId.startsWith('RHEA-')) type = 'RHEA'
 
-    const advisories: RedHatAdvisory[] = []
-
-    // Extract RHSA (Security Advisories)
-    if (response.data.RHSA && Array.isArray(response.data.RHSA)) {
-      advisories.push(...response.data.RHSA.map(item => ({
-        ...item,
-        type: 'RHSA',
-        resource_url: item.resource_url || `https://access.redhat.com/errata/${item.id}`,
-      })))
+            advisoryMap.set(advisoryId, {
+              id: advisoryId,
+              type,
+              severity: cve.severity || null,
+              synopsis: cve.bugzilla?.description || `Security update for ${cve.CVE}`,
+              description: cve.details?.[0] || null,
+              public_date: cve.public_date,
+              CVEs: [cve.CVE],
+              affected_packages: cve.affected_packages || [],
+              bugzilla: cve.bugzilla ? [{
+                id: cve.bugzilla.id,
+                description: cve.bugzilla.description
+              }] : [],
+              resource_url: `https://access.redhat.com/errata/${advisoryId}`,
+            })
+          } else {
+            // Add CVE to existing advisory
+            const advisory = advisoryMap.get(advisoryId)!
+            if (!advisory.CVEs.includes(cve.CVE)) {
+              advisory.CVEs.push(cve.CVE)
+            }
+          }
+        }
+      }
     }
 
-    // Sort by public_date (newest first)
+    const advisories = Array.from(advisoryMap.values())
     advisories.sort((a, b) => new Date(b.public_date).getTime() - new Date(a.public_date).getTime())
 
-    console.log(`Successfully fetched ${advisories.length} Red Hat Security Advisories`)
+    console.log(`Successfully extracted ${advisories.length} Red Hat Security Advisories from CVE data`)
     return advisories
   } catch (error: any) {
     console.error('Error fetching Red Hat advisories:', error.message)
@@ -133,21 +151,48 @@ export const fetchRedHatCVEs = async (days: number = 30): Promise<RedHatCVE[]> =
     afterDate.setDate(afterDate.getDate() - days)
     const afterDateStr = afterDate.toISOString().split('T')[0]
 
-    console.log(`Fetching Red Hat CVEs from ${afterDateStr}...`)
+    const beforeDate = new Date()
+    const beforeDateStr = beforeDate.toISOString().split('T')[0]
 
-    const response = await axios.get<RedHatCVE[]>(`${REDHAT_API_BASE}/cve.json`, {
+    console.log(`Fetching Red Hat CVEs from ${afterDateStr} to ${beforeDateStr}...`)
+
+    const response = await axios.get<any[]>(`${REDHAT_API_BASE}/cve.json`, {
       params: {
         after: afterDateStr,
+        before: beforeDateStr,
       },
       timeout: 30000,
     })
 
     const cves = Array.isArray(response.data) ? response.data : []
 
-    // Add resource_url if missing
-    const enrichedCves = cves.map(cve => ({
-      ...cve,
-      resource_url: cve.resource_url || `https://access.redhat.com/security/cve/${cve.CVE}`,
+    // Transform API response to RedHatCVE format
+    const enrichedCves: RedHatCVE[] = cves.map((item: any) => ({
+      CVE: item.CVE,
+      severity: item.severity || item.threat_severity || null,
+      public_date: item.public_date,
+      advisories: Array.isArray(item.advisories) ? item.advisories : [],
+      bugzilla: item.bugzilla ? {
+        id: item.bugzilla,
+        description: item.bugzilla_description,
+        url: `https://bugzilla.redhat.com/show_bug.cgi?id=${item.bugzilla}`
+      } : null,
+      cvss: {
+        cvss_base_score: item.cvss_score || item.cvss3?.cvss3_base_score || null,
+        cvss_scoring_vector: item.cvss_scoring_vector || item.cvss3?.cvss3_scoring_vector || null,
+        status: item.cvss3?.status || 'unknown'
+      },
+      cvss3: {
+        cvss3_base_score: item.cvss3?.cvss3_base_score || null,
+        cvss3_scoring_vector: item.cvss3?.cvss3_scoring_vector || null,
+        status: item.cvss3?.status || 'unknown'
+      },
+      cwe: item.CWE || null,
+      details: Array.isArray(item.details) ? item.details : (item.details ? [item.details] : []),
+      affected_packages: Array.isArray(item.affected_packages) ? item.affected_packages : [],
+      resource_url: `https://access.redhat.com/security/cve/${item.CVE}`,
+      upstream_fix: item.upstream_fix,
+      references: Array.isArray(item.references) ? item.references : []
     }))
 
     // Sort by public_date (newest first)
