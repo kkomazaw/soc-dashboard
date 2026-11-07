@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { prisma } from '../services/database/prismaClient'
 import { fetchRedHatCVE } from '../services/fetchers/redhatFetcher'
+import { fetchCveById, extractDescription, extractCvssData } from '../services/fetchers/nvdFetcher'
 
 export interface TimelineEvent {
   date: string
@@ -27,11 +28,60 @@ export const getCveTimeline = async (req: Request, res: Response) => {
     const timeline: TimelineEvent[] = []
 
     // 1. Check NVD data
-    const nvdData = await prisma.nvdCve.findFirst({
+    let nvdData = await prisma.nvdCve.findFirst({
       where: { cveId: normalizedCveId },
     })
 
-    if (nvdData) {
+    // If not in database, try fetching from NVD API directly
+    if (!nvdData) {
+      try {
+        const apiData = await fetchCveById(normalizedCveId)
+        if (apiData) {
+          const description = extractDescription(apiData)
+          const cvssData = extractCvssData(apiData)
+          const published = new Date(apiData.published)
+          const lastModified = new Date(apiData.lastModified)
+
+          // Add published event
+          timeline.push({
+            date: published.toISOString(),
+            type: 'published',
+            source: 'nvd',
+            title: 'CVE Published',
+            description: description || undefined,
+            severity: cvssData.severity || undefined,
+            cvssScore: cvssData.score || undefined,
+            url: `https://nvd.nist.gov/vuln/detail/${normalizedCveId}`,
+          })
+
+          // Add last modified event if different
+          if (lastModified.getTime() !== published.getTime()) {
+            timeline.push({
+              date: lastModified.toISOString(),
+              type: 'updated',
+              source: 'nvd',
+              title: 'NVD Entry Updated',
+              description: 'CVE information updated in NVD database',
+              severity: cvssData.severity || undefined,
+              cvssScore: cvssData.score || undefined,
+              url: `https://nvd.nist.gov/vuln/detail/${normalizedCveId}`,
+            })
+          }
+
+          // Mark that we found it in NVD (for the summary)
+          nvdData = {
+            published,
+            lastModified,
+            description,
+            cvssSeverity: cvssData.severity,
+            cvssScore: cvssData.score,
+          } as any
+        }
+      } catch (error) {
+        // Silently continue if NVD API fetch fails
+        console.log(`Could not fetch ${normalizedCveId} from NVD API`)
+      }
+    } else {
       // Published date
       timeline.push({
         date: nvdData.published.toISOString(),
