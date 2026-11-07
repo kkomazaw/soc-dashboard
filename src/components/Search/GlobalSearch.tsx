@@ -117,8 +117,8 @@ export const GlobalSearch = () => {
         const matchesSeverity = filters.severity.length === 0 ||
           filters.severity.includes(item.severity?.toUpperCase() || 'UNKNOWN')
 
-        const matchesCvss = item.cvssScore >= filters.cvssRange.min &&
-          item.cvssScore <= filters.cvssRange.max
+        const matchesCvss = (item.cvssScore ?? 0) >= filters.cvssRange.min &&
+          (item.cvssScore ?? 0) <= filters.cvssRange.max
 
         const matchesDate = (!filters.dateRange.start || new Date(item.publishedDate) >= new Date(filters.dateRange.start)) &&
           (!filters.dateRange.end || new Date(item.publishedDate) <= new Date(filters.dateRange.end))
@@ -282,7 +282,7 @@ export const GlobalSearch = () => {
                         {result.cveId && (
                           <span className="text-xs font-mono text-blue-600 dark:text-blue-400">{result.cveId}</span>
                         )}
-                        {result.cvssScore !== undefined && (
+                        {result.cvssScore !== undefined && result.cvssScore !== null && (
                           <span className="text-xs text-gray-500 dark:text-gray-400">CVSS: {result.cvssScore.toFixed(1)}</span>
                         )}
                       </div>
