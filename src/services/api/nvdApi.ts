@@ -22,6 +22,7 @@ export interface NvdCve {
 
 export interface NvdStats {
   total: number
+  currentYear: number
   recent24h: number
   recent7days: number
   bySeverity: {

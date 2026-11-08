@@ -144,7 +144,7 @@ export const NvdList = () => {
             <div className="flex items-center gap-3">
               <Shield className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total CVEs</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{data.stats.currentYear}年公開総数</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{data.stats.total}</p>
               </div>
             </div>

@@ -79,7 +79,20 @@ export const searchNvdCveById = async (cveId: string) => {
 }
 
 export const getNvdStats = async () => {
-  const total = await prisma.nvdCve.count()
+  // Get current year
+  const currentYear = new Date().getFullYear()
+  const yearStart = new Date(currentYear, 0, 1) // January 1st of current year
+  const yearEnd = new Date(currentYear + 1, 0, 1) // January 1st of next year
+
+  // Count only current year's CVEs
+  const total = await prisma.nvdCve.count({
+    where: {
+      published: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
+    },
+  })
 
   const oneDayAgo = new Date()
   oneDayAgo.setDate(oneDayAgo.getDate() - 1)
@@ -101,9 +114,13 @@ export const getNvdStats = async () => {
     },
   })
 
-  // Count by CVSS severity
+  // Count by CVSS severity (current year only)
   const critical = await prisma.nvdCve.count({
     where: {
+      published: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { cvssSeverity: 'CRITICAL' },
         { cvssScore: { gte: 9.0 } },
@@ -113,6 +130,10 @@ export const getNvdStats = async () => {
 
   const high = await prisma.nvdCve.count({
     where: {
+      published: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { cvssSeverity: 'HIGH' },
         { cvssScore: { gte: 7.0, lt: 9.0 } },
@@ -122,6 +143,10 @@ export const getNvdStats = async () => {
 
   const medium = await prisma.nvdCve.count({
     where: {
+      published: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { cvssSeverity: 'MEDIUM' },
         { cvssScore: { gte: 4.0, lt: 7.0 } },
@@ -131,6 +156,10 @@ export const getNvdStats = async () => {
 
   const low = await prisma.nvdCve.count({
     where: {
+      published: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { cvssSeverity: 'LOW' },
         { cvssScore: { gte: 0.1, lt: 4.0 } },
@@ -140,6 +169,7 @@ export const getNvdStats = async () => {
 
   return {
     total,
+    currentYear,
     recent24h,
     recent7days,
     bySeverity: {
