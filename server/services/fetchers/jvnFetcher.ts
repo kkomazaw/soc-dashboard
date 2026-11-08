@@ -24,7 +24,7 @@ export interface JvnVulnerabilityItem {
 
 const JVN_FEEDS = {
   jvn: 'https://jvn.jp/rss/jvn.rdf',
-  jpcert: 'https://www.jpcert.or.jp/at/feed.rss',
+  jpcert: 'https://www.jpcert.or.jp/rss/jpcert.rdf',
 }
 
 const JVN_API = 'https://jvndb.jvn.jp/myjvn'
