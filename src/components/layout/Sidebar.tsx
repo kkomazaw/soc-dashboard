@@ -11,6 +11,7 @@ const menuItems = [
   { id: 'cve-timeline', label: 'CVEタイムライン', icon: Calendar },
   { id: 'vulnerabilities', label: '脆弱性', icon: Shield, children: [
     { id: 'cisa-kev', label: 'CISA KEV' },
+    { id: 'cisa-kev-analytics', label: 'CISA KEV 分析' },
     { id: 'jvn', label: 'JVN' },
     { id: 'nvd', label: 'NVD' },
     { id: 'redhat', label: 'Red Hat Security' },

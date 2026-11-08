@@ -21,6 +21,7 @@ const VulnerabilityTrends = lazy(() => import('./components/Analytics/Vulnerabil
 const EnhancedDashboard = lazy(() => import('./components/Analytics/EnhancedDashboard').then(m => ({ default: m.EnhancedDashboard })))
 const GlobalSearch = lazy(() => import('./components/Search/GlobalSearch').then(m => ({ default: m.GlobalSearch })))
 const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').then(m => ({ default: m.CVETimeline })))
+const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalytics').then(m => ({ default: m.CisaKevAnalytics })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,8 @@ function AppContent() {
       case 'vulnerabilities':
       case 'cisa-kev':
         return <CisaKevList />
+      case 'cisa-kev-analytics':
+        return <CisaKevAnalytics />
       case 'jvn':
         return <JvnList />
       case 'nvd':
