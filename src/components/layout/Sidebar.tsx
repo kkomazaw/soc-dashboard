@@ -11,13 +11,15 @@ const menuItems = [
   { id: 'cve-timeline', label: 'CVEタイムライン', icon: Calendar },
   { id: 'vulnerabilities', label: '脆弱性', icon: Shield, children: [
     { id: 'cisa-kev', label: 'CISA KEV' },
-    { id: 'cisa-kev-analytics', label: 'CISA KEV 分析' },
     { id: 'jvn', label: 'JVN' },
     { id: 'nvd', label: 'NVD' },
     { id: 'redhat', label: 'Red Hat Security' },
   ]},
-  { id: 'vulnerability-trends', label: 'トレンド分析', icon: TrendingUp },
-  { id: 'enhanced-analytics', label: '高度な分析', icon: BarChart3 },
+  { id: 'analytics', label: '分析', icon: BarChart3, children: [
+    { id: 'cisa-kev-analytics', label: 'CISA KEV 分析' },
+    { id: 'vulnerability-trends', label: 'トレンド分析' },
+    { id: 'enhanced-analytics', label: '高度な分析' },
+  ]},
   { id: 'ioc-search', label: 'IoC検索', icon: Search },
   { id: 'attack-matrix', label: 'ATT&CK Matrix', icon: Target },
   { id: 'news', label: 'ニュース', icon: Newspaper },
