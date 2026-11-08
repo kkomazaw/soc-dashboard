@@ -7,15 +7,20 @@ import {
   RefreshCw,
   ExternalLink,
   TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { getJvnVulnerabilities, refreshJvnData } from '@/services/api/jvnApi'
 import { ExportButton } from '../common/ExportButton'
 import { exportJvn } from '@/services/api/exportApi'
 
+const ITEMS_PER_PAGE = 50
+
 export const JvnList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [severityFilter, setSeverityFilter] = useState<string>('all')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['jvn-vulnerabilities'],
@@ -78,6 +83,37 @@ export const JvnList = () => {
 
     return matchesSearch && matchesSeverity
   })
+
+  // Pagination logic
+  const totalItems = filteredVulnerabilities?.length || 0
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const displayVulnerabilities = filteredVulnerabilities?.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) goToPage(currentPage - 1)
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) goToPage(currentPage + 1)
+  }
+
+  // Reset to page 1 when filters change
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(1)
+  }
+
+  const handleSeverityChange = (value: string) => {
+    setSeverityFilter(value)
+    setCurrentPage(1)
+  }
 
   if (isLoading) {
     return (
@@ -180,7 +216,7 @@ export const JvnList = () => {
               type="text"
               placeholder="JVN ID, CVE ID, タイトル, 説明で検索..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -188,7 +224,7 @@ export const JvnList = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">深刻度</label>
             <select
               value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
+              onChange={(e) => handleSeverityChange(e.target.value)}
               className="w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">すべて</option>
@@ -228,8 +264,8 @@ export const JvnList = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredVulnerabilities && filteredVulnerabilities.length > 0 ? (
-                filteredVulnerabilities.map((vuln) => (
+              {displayVulnerabilities && displayVulnerabilities.length > 0 ? (
+                displayVulnerabilities.map((vuln) => (
                   <tr key={vuln.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
@@ -299,13 +335,98 @@ export const JvnList = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  前へ
+                </button>
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  次へ
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    全<span className="font-medium">{totalItems}</span>件中{' '}
+                    <span className="font-medium">{startIndex + 1}</span>-
+                    <span className="font-medium">{Math.min(endIndex, totalItems)}</span>件を表示
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">前へ</span>
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+                      let pageNum: number
+                      if (totalPages <= 10) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 4) {
+                        pageNum = totalPages - 9 + i
+                      } else {
+                        pageNum = currentPage - 4 + i
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-blue-50 dark:bg-blue-900/50 border-blue-500 dark:border-blue-600 text-blue-600 dark:text-blue-400'
+                              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">次へ</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results count */}
       {filteredVulnerabilities && (
         <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-          {filteredVulnerabilities.length} 件の脆弱性を表示中
-          {data?.data && filteredVulnerabilities.length !== data.data.length && (
+          表示中: {displayVulnerabilities?.length || 0} 件
+          {totalItems !== data?.data.length && (
+            <span> (フィルター適用後: {totalItems} 件 / 全 {data?.data.length} 件)</span>
+          )}
+          {totalItems === data?.data.length && data?.data.length && (
             <span> (全 {data.data.length} 件)</span>
           )}
         </p>
