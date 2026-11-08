@@ -57,7 +57,20 @@ export const getRecentJvnVulnerabilities = async (days: number = 30) => {
 }
 
 export const getJvnStats = async () => {
-  const total = await prisma.jvnVulnerability.count()
+  // Get current year
+  const currentYear = new Date().getFullYear()
+  const yearStart = new Date(currentYear, 0, 1) // January 1st of current year
+  const yearEnd = new Date(currentYear + 1, 0, 1) // January 1st of next year
+
+  // Count only current year's vulnerabilities
+  const total = await prisma.jvnVulnerability.count({
+    where: {
+      publishedDate: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
+    },
+  })
 
   const oneDayAgo = new Date()
   oneDayAgo.setDate(oneDayAgo.getDate() - 1)
@@ -79,9 +92,13 @@ export const getJvnStats = async () => {
     },
   })
 
-  // Count by severity
+  // Count by severity (current year only)
   const critical = await prisma.jvnVulnerability.count({
     where: {
+      publishedDate: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { severity: { contains: '緊急' } },
         { severity: { contains: 'Critical' } },
@@ -92,6 +109,10 @@ export const getJvnStats = async () => {
 
   const high = await prisma.jvnVulnerability.count({
     where: {
+      publishedDate: {
+        gte: yearStart,
+        lt: yearEnd,
+      },
       OR: [
         { severity: { contains: '重要' } },
         { severity: { contains: 'High' } },
@@ -102,6 +123,7 @@ export const getJvnStats = async () => {
 
   return {
     total,
+    currentYear,
     recent24h,
     recent7days,
     bySeverity: {

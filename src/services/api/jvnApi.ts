@@ -21,13 +21,14 @@ export interface JvnVulnerability {
 
 export interface JvnStats {
   total: number
+  currentYear: number
   recent24h: number
   recent7days: number
   bySeverity: {
     critical: number
     high: number
-    medium: number
-    low: number
+    medium?: number
+    low?: number
   }
 }
 
