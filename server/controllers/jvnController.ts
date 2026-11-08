@@ -6,6 +6,8 @@ import {
   getJvnStats,
   saveJvnVulnerabilities,
 } from '../services/database/jvnDb'
+import { getEpssScoresByCveIds } from '../services/database/epssDb'
+import { interpretEpssScore } from '../services/fetchers/epssFetcher'
 
 export const getJvnVulnerabilities = async (req: Request, res: Response) => {
   try {
@@ -13,11 +15,27 @@ export const getJvnVulnerabilities = async (req: Request, res: Response) => {
     const vulnerabilities = await getAllJvnVulnerabilities()
     console.log(`Retrieved ${vulnerabilities.length} JVN vulnerabilities from database`)
 
+    // Get EPSS scores for all CVEs
+    const cveIds = vulnerabilities.map(v => v.cveId).filter(id => id !== null) as string[]
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
+    // Enrich vulnerabilities with EPSS data
+    const enrichedVulns = vulnerabilities.map(vuln => ({
+      ...vuln,
+      epss: vuln.cveId && epssMap.has(vuln.cveId) ? {
+        score: epssMap.get(vuln.cveId)!.epss,
+        percentile: epssMap.get(vuln.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(vuln.cveId)!.epss),
+        scoreDate: epssMap.get(vuln.cveId)!.scoreDate,
+      } : null,
+    }))
+
     const stats = await getJvnStats()
 
     res.json({
       success: true,
-      data: vulnerabilities,
+      data: enrichedVulns,
       stats,
       timestamp: new Date().toISOString(),
     })
@@ -38,9 +56,25 @@ export const getRecentJvn = async (req: Request, res: Response) => {
 
     const vulnerabilities = await getRecentJvnVulnerabilities(days)
 
+    // Get EPSS scores for all CVEs
+    const cveIds = vulnerabilities.map(v => v.cveId).filter(id => id !== null) as string[]
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
+    // Enrich vulnerabilities with EPSS data
+    const enrichedVulns = vulnerabilities.map(vuln => ({
+      ...vuln,
+      epss: vuln.cveId && epssMap.has(vuln.cveId) ? {
+        score: epssMap.get(vuln.cveId)!.epss,
+        percentile: epssMap.get(vuln.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(vuln.cveId)!.epss),
+        scoreDate: epssMap.get(vuln.cveId)!.scoreDate,
+      } : null,
+    }))
+
     res.json({
       success: true,
-      data: vulnerabilities,
+      data: enrichedVulns,
       count: vulnerabilities.length,
       days,
       timestamp: new Date().toISOString(),

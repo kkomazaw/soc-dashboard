@@ -216,6 +216,90 @@ export const extractCvssData = (cve: NvdCveItem): {
 }
 
 /**
+ * Get total count of CVEs for a specific year from NVD API
+ * @param year Year to query (e.g., 2026)
+ * @returns Total count of CVEs published in that year
+ */
+export const fetchNvdYearTotal = async (year: number): Promise<number> => {
+  try {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+
+    // NVD API has a 120-day maximum date range limit
+    // We need to break the year into 120-day chunks and sum the results
+    const yearStart = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0))
+    const yearEnd = year === currentYear
+      ? now
+      : new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999))
+
+    const CHUNK_DAYS = 120
+    const chunks: Array<{ start: Date; end: Date }> = []
+
+    let chunkStart = new Date(yearStart)
+    while (chunkStart < yearEnd) {
+      const chunkEnd = new Date(chunkStart)
+      chunkEnd.setDate(chunkEnd.getDate() + CHUNK_DAYS)
+
+      // Don't go past the year end
+      if (chunkEnd > yearEnd) {
+        chunks.push({ start: new Date(chunkStart), end: new Date(yearEnd) })
+        break
+      } else {
+        chunks.push({ start: new Date(chunkStart), end: new Date(chunkEnd) })
+        chunkStart = new Date(chunkEnd)
+      }
+    }
+
+    console.log(`Fetching NVD CVE count for year ${year} in ${chunks.length} chunks...`)
+
+    const headers: Record<string, string> = { 'Accept': 'application/json' }
+    if (NVD_API_KEY) {
+      headers['apiKey'] = NVD_API_KEY
+    }
+
+    let totalCount = 0
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i]
+      await sleep(RATE_LIMIT_DELAY) // Rate limiting between requests
+
+      const params = {
+        pubStartDate: chunk.start.toISOString(),
+        pubEndDate: chunk.end.toISOString(),
+        resultsPerPage: 10,
+        startIndex: 0,
+      }
+
+      const response = await axios.get<NvdApiResponse>(NVD_API_URL, {
+        headers,
+        params,
+        timeout: 15000,
+      })
+
+      const chunkTotal = response.data.totalResults || 0
+      totalCount += chunkTotal
+    }
+
+    console.log(`✅ NVD API reports ${totalCount} total CVEs published in ${year}`)
+    return totalCount
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 403) {
+        console.error(`NVD API access forbidden for year ${year}. Check API key or rate limits.`)
+      } else if (error.response?.status === 503) {
+        console.error(`NVD API service unavailable for year ${year}. Try again later.`)
+      } else {
+        console.error(`Error fetching NVD year total for ${year}:`, error.message)
+      }
+    } else {
+      console.error(`Error fetching NVD year total for ${year}:`, error)
+    }
+    // Return -1 to indicate error, caller can fallback to DB count
+    return -1
+  }
+}
+
+/**
  * Check if NVD API is configured
  */
 export const isNvdConfigured = (): boolean => {

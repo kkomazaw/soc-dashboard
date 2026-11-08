@@ -203,6 +203,23 @@ model RedHatCve {
   @@map("redhat_cves")
 }
 
+// EPSS (Exploit Prediction Scoring System)
+model EpssScore {
+  id            Int      @id @default(autoincrement())
+  cveId         String   @unique @map("cve_id")
+  epss          Float    // EPSS score (0.0-1.0, probability of exploitation in next 30 days)
+  percentile    Float    // Percentile ranking (0.0-1.0)
+  modelVersion  String   @map("model_version")
+  scoreDate     DateTime @map("score_date") // Date this score was calculated
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([cveId])
+  @@index([epss])
+  @@index([scoreDate])
+  @@map("epss_scores")
+}
+
 // App Settings
 model AppSetting {
   id        Int      @id @default(autoincrement())

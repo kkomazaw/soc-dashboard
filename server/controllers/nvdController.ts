@@ -11,6 +11,11 @@ import {
   saveNvdCves,
   searchNvdCveById,
 } from '../services/database/nvdDb'
+import {
+  getEpssScoresByCveIds,
+  getEpssScoreByCveId,
+} from '../services/database/epssDb'
+import { interpretEpssScore } from '../services/fetchers/epssFetcher'
 
 export const getNvdCves = async (req: Request, res: Response) => {
   try {
@@ -18,11 +23,27 @@ export const getNvdCves = async (req: Request, res: Response) => {
     const cves = await getAllNvdCves()
     console.log(`Retrieved ${cves.length} NVD CVEs from database`)
 
+    // Get EPSS scores for all CVEs
+    const cveIds = cves.map(cve => cve.cveId)
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
+    // Enrich CVEs with EPSS data
+    const enrichedCves = cves.map(cve => ({
+      ...cve,
+      epss: epssMap.has(cve.cveId) ? {
+        score: epssMap.get(cve.cveId)!.epss,
+        percentile: epssMap.get(cve.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(cve.cveId)!.epss),
+        scoreDate: epssMap.get(cve.cveId)!.scoreDate,
+      } : null,
+    }))
+
     const stats = await getNvdStats()
 
     res.json({
       success: true,
-      data: cves,
+      data: enrichedCves,
       stats,
       timestamp: new Date().toISOString(),
     })
@@ -43,9 +64,25 @@ export const getRecentNvd = async (req: Request, res: Response) => {
 
     const cves = await getRecentNvdCves(days)
 
+    // Get EPSS scores for all CVEs
+    const cveIds = cves.map(cve => cve.cveId)
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
+    // Enrich CVEs with EPSS data
+    const enrichedCves = cves.map(cve => ({
+      ...cve,
+      epss: epssMap.has(cve.cveId) ? {
+        score: epssMap.get(cve.cveId)!.epss,
+        percentile: epssMap.get(cve.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(cve.cveId)!.epss),
+        scoreDate: epssMap.get(cve.cveId)!.scoreDate,
+      } : null,
+    }))
+
     res.json({
       success: true,
-      data: cves,
+      data: enrichedCves,
       count: cves.length,
       days,
       timestamp: new Date().toISOString(),
@@ -70,9 +107,22 @@ export const searchCve = async (req: Request, res: Response) => {
 
     if (cve) {
       console.log(`Found CVE ${cveId} in database`)
+
+      // Get EPSS score
+      const epssScore = await getEpssScoreByCveId(cve.cveId)
+      const enrichedCve = {
+        ...cve,
+        epss: epssScore ? {
+          score: epssScore.epss,
+          percentile: epssScore.percentile,
+          interpretation: interpretEpssScore(epssScore.epss),
+          scoreDate: epssScore.scoreDate,
+        } : null,
+      }
+
       return res.json({
         success: true,
-        data: cve,
+        data: enrichedCve,
         source: 'database',
         timestamp: new Date().toISOString(),
       })
@@ -90,12 +140,26 @@ export const searchCve = async (req: Request, res: Response) => {
         // Retrieve from database to get consistent format
         cve = await searchNvdCveById(cveId)
 
-        return res.json({
-          success: true,
-          data: cve,
-          source: 'nvd-api',
-          timestamp: new Date().toISOString(),
-        })
+        if (cve) {
+          // Get EPSS score
+          const epssScore = await getEpssScoreByCveId(cve.cveId)
+          const enrichedCve = {
+            ...cve,
+            epss: epssScore ? {
+              score: epssScore.epss,
+              percentile: epssScore.percentile,
+              interpretation: interpretEpssScore(epssScore.epss),
+              scoreDate: epssScore.scoreDate,
+            } : null,
+          }
+
+          return res.json({
+            success: true,
+            data: enrichedCve,
+            source: 'nvd-api',
+            timestamp: new Date().toISOString(),
+          })
+        }
       }
     }
 

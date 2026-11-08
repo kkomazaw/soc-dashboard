@@ -1,6 +1,10 @@
 import { prisma } from './prismaClient'
 import type { NvdCveItem } from '../fetchers/nvdFetcher'
-import { extractDescription, extractCvssData } from '../fetchers/nvdFetcher'
+import { extractDescription, extractCvssData, fetchNvdYearTotal } from '../fetchers/nvdFetcher'
+
+// Cache for year total to avoid hitting NVD API rate limits
+let cachedYearTotal: { year: number; total: number; timestamp: number } | null = null
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
 export const saveNvdCves = async (cves: NvdCveItem[]): Promise<void> => {
   console.log(`Saving ${cves.length} NVD CVEs to database...`)
@@ -84,8 +88,25 @@ export const getNvdStats = async () => {
   const yearStart = new Date(currentYear, 0, 1) // January 1st of current year
   const yearEnd = new Date(currentYear + 1, 0, 1) // January 1st of next year
 
-  // Count only current year's CVEs
-  const total = await prisma.nvdCve.count({
+  // Check cache first
+  const now = Date.now()
+  let apiTotal = -1
+
+  if (cachedYearTotal && cachedYearTotal.year === currentYear && now - cachedYearTotal.timestamp < CACHE_DURATION) {
+    console.log(`Using cached NVD year total: ${cachedYearTotal.total}`)
+    apiTotal = cachedYearTotal.total
+  } else {
+    // Get accurate total from NVD API
+    apiTotal = await fetchNvdYearTotal(currentYear)
+
+    // Cache the result if successful
+    if (apiTotal > 0) {
+      cachedYearTotal = { year: currentYear, total: apiTotal, timestamp: now }
+    }
+  }
+
+  // Fallback to DB count if API fails
+  const dbTotal = await prisma.nvdCve.count({
     where: {
       published: {
         gte: yearStart,
@@ -93,6 +114,9 @@ export const getNvdStats = async () => {
       },
     },
   })
+
+  // Use API total if available, otherwise use DB count
+  const total = apiTotal > 0 ? apiTotal : dbTotal
 
   const oneDayAgo = new Date()
   oneDayAgo.setDate(oneDayAgo.getDate() - 1)

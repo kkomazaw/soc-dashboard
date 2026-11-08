@@ -17,6 +17,7 @@ const menuItems = [
   ]},
   { id: 'analytics', label: '分析', icon: BarChart3, children: [
     { id: 'cisa-kev-analytics', label: 'CISA KEV 分析' },
+    { id: 'nvd-analytics', label: 'NVD 分析' },
     { id: 'vulnerability-trends', label: 'トレンド分析' },
     { id: 'enhanced-analytics', label: '高度な分析' },
   ]},

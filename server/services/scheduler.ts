@@ -6,6 +6,7 @@ import {
   syncNvdData,
   syncAttackData,
   syncNewsData,
+  syncEpssData,
 } from './dataSync'
 
 /**
@@ -58,6 +59,17 @@ export const initializeScheduler = () => {
     }
   })
 
+  // Sync EPSS scores daily
+  // Runs at: 04:00 every day
+  cron.schedule('0 4 * * *', async () => {
+    console.log('⏰ Running scheduled EPSS sync...')
+    try {
+      await syncEpssData()
+    } catch (error) {
+      console.error('Scheduled EPSS sync failed:', error)
+    }
+  })
+
   // Sync news feeds every 1 hour
   cron.schedule('0 * * * *', async () => {
     console.log('⏰ Running scheduled news sync...')
@@ -83,6 +95,7 @@ export const initializeScheduler = () => {
   console.log('   - JVN: Every 6 hours (01:00, 07:00, 13:00, 19:00)')
   console.log('   - NVD: Every 12 hours (02:00, 14:00)')
   console.log('   - MITRE ATT&CK: Weekly (Sunday at 03:00)')
+  console.log('   - EPSS: Daily (04:00)')
   console.log('   - News Feed: Every 1 hour (on the hour)')
   console.log('   - Initial sync: Starting in 3 seconds...')
 }

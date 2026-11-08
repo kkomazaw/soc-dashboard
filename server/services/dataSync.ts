@@ -3,11 +3,14 @@ import { fetchAllRssFeeds } from './fetchers/rssFetcher'
 import { fetchJvnVulnerabilities } from './fetchers/jvnFetcher'
 import { fetchRecentNvdCves } from './fetchers/nvdFetcher'
 import { fetchAttackData } from './fetchers/attackFetcher'
+import { fetchEpssScoresByCves } from './fetchers/epssFetcher'
 import { saveCisaKevData, getCisaKevStats } from './database/cisaKevDb'
 import { saveNewsArticles, getNewsStats } from './database/newsDb'
 import { saveJvnVulnerabilities, getJvnStats } from './database/jvnDb'
 import { saveNvdCves, getNvdStats } from './database/nvdDb'
 import { saveAttackTechniques, saveAttackTactics, getAttackStats } from './database/attackDb'
+import { saveEpssScores, getEpssStats, getLatestScoreDate } from './database/epssDb'
+import { prisma } from './database/prismaClient'
 
 /**
  * Sync CISA KEV data from external API to database
@@ -104,6 +107,61 @@ export const syncAttackData = async (): Promise<void> => {
 }
 
 /**
+ * Sync EPSS scores for all CVEs in database
+ */
+export const syncEpssData = async (): Promise<void> => {
+  try {
+    console.log('⏳ Starting EPSS data sync (incremental)...')
+
+    // Get all unique CVE IDs from our vulnerability databases
+    const nvdCves = await prisma.nvdCve.findMany({ select: { cveId: true } })
+    const jvnCves = await prisma.jvnVulnerability.findMany({ select: { cveId: true } })
+    const cisaCves = await prisma.cisaKev.findMany({ select: { cveId: true } })
+    const redhatCves = await prisma.redHatCve.findMany({ select: { cveId: true } })
+
+    const allCveIds = new Set<string>()
+    nvdCves.forEach((c) => c.cveId && allCveIds.add(c.cveId))
+    jvnCves.forEach((c) => c.cveId && allCveIds.add(c.cveId))
+    cisaCves.forEach((c) => allCveIds.add(c.cveId))
+    redhatCves.forEach((c) => allCveIds.add(c.cveId))
+
+    const cveIdArray = Array.from(allCveIds)
+    console.log(`Fetching EPSS scores for ${cveIdArray.length} unique CVEs...`)
+
+    // Fetch in batches (EPSS API has limits)
+    const batchSize = 100
+    const scores = []
+
+    for (let i = 0; i < cveIdArray.length; i += batchSize) {
+      const batch = cveIdArray.slice(i, i + batchSize)
+      try {
+        const batchScores = await fetchEpssScoresByCves(batch)
+        scores.push(...batchScores)
+        console.log(`Fetched ${scores.length}/${cveIdArray.length} EPSS scores...`)
+      } catch (error) {
+        console.error(`Error fetching batch ${i / batchSize + 1}:`, error)
+        // Continue with next batch
+      }
+    }
+
+    // Save to database
+    if (scores.length > 0) {
+      await saveEpssScores(scores)
+    }
+
+    // Get updated stats
+    const stats = await getEpssStats()
+    const latestDate = await getLatestScoreDate()
+
+    console.log(`✅ EPSS sync complete: ${scores.length} scores updated, latest date: ${latestDate?.toISOString().split('T')[0]}`)
+  } catch (error) {
+    console.error('❌ Failed to sync EPSS data:', error)
+    // Don't throw error for EPSS sync failures to avoid blocking other syncs
+    console.warn('Continuing with other syncs despite EPSS failure...')
+  }
+}
+
+/**
  * Sync all data sources
  */
 export const syncAllData = async (): Promise<void> => {
@@ -118,6 +176,7 @@ export const syncAllData = async (): Promise<void> => {
       syncNvdData(),
       syncAttackData(),
       syncNewsData(),
+      syncEpssData(),
     ])
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
@@ -133,13 +192,16 @@ export const syncAllData = async (): Promise<void> => {
  */
 export const getSyncStatus = async () => {
   try {
-    const [cisaStats, jvnStats, nvdStats, attackStats, newsStats] = await Promise.all([
+    const [cisaStats, jvnStats, nvdStats, attackStats, newsStats, epssStats] = await Promise.all([
       getCisaKevStats(),
       getJvnStats(),
       getNvdStats(),
       getAttackStats(),
       getNewsStats(),
+      getEpssStats(),
     ])
+
+    const latestEpssDate = await getLatestScoreDate()
 
     return {
       cisaKev: cisaStats,
@@ -147,6 +209,10 @@ export const getSyncStatus = async () => {
       nvd: nvdStats,
       attack: attackStats,
       news: newsStats,
+      epss: {
+        ...epssStats,
+        latestScoreDate: latestEpssDate,
+      },
       lastSync: new Date().toISOString(),
     }
   } catch (error) {

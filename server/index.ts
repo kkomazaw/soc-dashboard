@@ -13,6 +13,7 @@ import mappingRouter from './routes/mapping'
 import analyticsRouter from './routes/analytics'
 import twitterRouter from './routes/twitter'
 import cveTimelineRouter from './routes/cveTimeline'
+import epssRouter from './routes/epss'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -35,6 +36,7 @@ app.use('/api/mapping', mappingRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/twitter', twitterRouter)
 app.use('/api/cve', cveTimelineRouter)
+app.use('/api/epss', epssRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -84,6 +86,12 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/twitter/list/info`)
   console.log(`   - GET  /api/cve/search?query=keyword`)
   console.log(`   - GET  /api/cve/:cveId/timeline`)
+  console.log(`   - GET  /api/epss/stats`)
+  console.log(`   - GET  /api/epss/high-risk`)
+  console.log(`   - GET  /api/epss/all`)
+  console.log(`   - GET  /api/epss/:cveId`)
+  console.log(`   - POST /api/epss/refresh`)
+  console.log(`   - POST /api/epss/bulk`)
   console.log(`   - GET  /health`)
   console.log('')
 

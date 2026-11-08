@@ -13,6 +13,8 @@ import {
   saveRedHatAdvisories,
   saveRedHatCVEs,
 } from '../services/database/redhatDb'
+import { getEpssScoresByCveIds } from '../services/database/epssDb'
+import { interpretEpssScore } from '../services/fetchers/epssFetcher'
 
 /**
  * Get all Red Hat Security Advisories
@@ -45,13 +47,24 @@ export const getCVEs = async (req: Request, res: Response) => {
   try {
     const cves = await getAllRedHatCVEs()
 
-    // Parse JSON strings
+    // Get EPSS scores for all CVEs
+    const cveIds = cves.map(cve => cve.cveId)
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
+    // Parse JSON strings and add EPSS data
     const parsedCVEs = cves.map((cve) => ({
       ...cve,
       advisories: cve.advisories ? JSON.parse(cve.advisories) : [],
       details: cve.details ? JSON.parse(cve.details) : [],
       affectedPackages: cve.affectedPackages ? JSON.parse(cve.affectedPackages) : [],
       references: cve.references ? JSON.parse(cve.references) : [],
+      epss: epssMap.has(cve.cveId) ? {
+        score: epssMap.get(cve.cveId)!.epss,
+        percentile: epssMap.get(cve.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(cve.cveId)!.epss),
+        scoreDate: epssMap.get(cve.cveId)!.scoreDate,
+      } : null,
     }))
 
     res.json(parsedCVEs)
@@ -85,6 +98,11 @@ export const getAllData = async (req: Request, res: Response) => {
       getRedHatStats(),
     ])
 
+    // Get EPSS scores for all CVEs
+    const cveIds = cves.map(cve => cve.cveId)
+    const epssScores = await getEpssScoresByCveIds(cveIds)
+    const epssMap = new Map(epssScores.map(score => [score.cveId, score]))
+
     // Parse JSON strings for advisories
     const parsedAdvisories = advisories.map((advisory) => ({
       ...advisory,
@@ -95,13 +113,19 @@ export const getAllData = async (req: Request, res: Response) => {
       bugzilla: advisory.bugzilla ? JSON.parse(advisory.bugzilla) : [],
     }))
 
-    // Parse JSON strings for CVEs
+    // Parse JSON strings for CVEs and add EPSS data
     const parsedCVEs = cves.map((cve) => ({
       ...cve,
       advisories: cve.advisories ? JSON.parse(cve.advisories) : [],
       details: cve.details ? JSON.parse(cve.details) : [],
       affectedPackages: cve.affectedPackages ? JSON.parse(cve.affectedPackages) : [],
       references: cve.references ? JSON.parse(cve.references) : [],
+      epss: epssMap.has(cve.cveId) ? {
+        score: epssMap.get(cve.cveId)!.epss,
+        percentile: epssMap.get(cve.cveId)!.percentile,
+        interpretation: interpretEpssScore(epssMap.get(cve.cveId)!.epss),
+        scoreDate: epssMap.get(cve.cveId)!.scoreDate,
+      } : null,
     }))
 
     res.json({

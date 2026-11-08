@@ -22,6 +22,7 @@ const EnhancedDashboard = lazy(() => import('./components/Analytics/EnhancedDash
 const GlobalSearch = lazy(() => import('./components/Search/GlobalSearch').then(m => ({ default: m.GlobalSearch })))
 const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').then(m => ({ default: m.CVETimeline })))
 const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalytics').then(m => ({ default: m.CisaKevAnalytics })))
+const NvdAnalytics = lazy(() => import('./components/Analytics/NvdAnalytics').then(m => ({ default: m.NvdAnalytics })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,8 @@ function AppContent() {
         return <JvnList />
       case 'nvd':
         return <NvdList />
+      case 'nvd-analytics':
+        return <NvdAnalytics />
       case 'redhat':
         return <RedHatSecurityList />
       case 'global-search':

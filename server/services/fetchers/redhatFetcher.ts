@@ -176,33 +176,50 @@ export const fetchRedHatCVEs = async (days: number = 30): Promise<RedHatCVE[]> =
     const cves = Array.isArray(response.data) ? response.data : []
 
     // Transform API response to RedHatCVE format
-    const enrichedCves: RedHatCVE[] = cves.map((item: any) => ({
-      CVE: item.CVE,
-      severity: item.severity || item.threat_severity || null,
-      public_date: item.public_date,
-      advisories: Array.isArray(item.advisories) ? item.advisories : [],
-      bugzilla: item.bugzilla ? {
-        id: item.bugzilla,
-        description: item.bugzilla_description,
-        url: `https://bugzilla.redhat.com/show_bug.cgi?id=${item.bugzilla}`
-      } : null,
-      cvss: {
-        cvss_base_score: item.cvss_score || item.cvss3?.cvss3_base_score || null,
-        cvss_scoring_vector: item.cvss_scoring_vector || item.cvss3?.cvss3_scoring_vector || null,
-        status: item.cvss3?.status || 'unknown'
-      },
-      cvss3: {
-        cvss3_base_score: item.cvss3?.cvss3_base_score || null,
-        cvss3_scoring_vector: item.cvss3?.cvss3_scoring_vector || null,
-        status: item.cvss3?.status || 'unknown'
-      },
-      cwe: item.CWE || null,
-      details: Array.isArray(item.details) ? item.details : (item.details ? [item.details] : []),
-      affected_packages: Array.isArray(item.affected_packages) ? item.affected_packages : [],
-      resource_url: `https://access.redhat.com/security/cve/${item.CVE}`,
-      upstream_fix: item.upstream_fix,
-      references: Array.isArray(item.references) ? item.references : []
-    }))
+    const enrichedCves: RedHatCVE[] = cves.map((item: any) => {
+      // Extract advisories from affected_release field
+      let advisories: string[] = []
+      if (Array.isArray(item.affected_release)) {
+        advisories = item.affected_release
+          .map((release: any) => release.advisory)
+          .filter((advisory: string) => advisory && advisory.trim() !== '')
+      }
+      // Also check the advisories field directly
+      if (Array.isArray(item.advisories)) {
+        advisories = [...advisories, ...item.advisories]
+      }
+      // Remove duplicates
+      advisories = [...new Set(advisories)]
+
+      return {
+        CVE: item.CVE,
+        severity: item.severity || item.threat_severity || null,
+        public_date: item.public_date,
+        advisories,
+        bugzilla: item.bugzilla ? {
+          id: item.bugzilla,
+          description: item.bugzilla_description || item.bugzilla?.description,
+          url: `https://bugzilla.redhat.com/show_bug.cgi?id=${item.bugzilla}`
+        } : null,
+        cvss: item.cvss_score || item.cvss_scoring_vector ? {
+          cvss_base_score: item.cvss_score || null,
+          cvss_scoring_vector: item.cvss_scoring_vector || null,
+          status: 'verified'
+        } : null,
+        cvss3: item.cvss3_score || item.cvss3_scoring_vector ? {
+          cvss3_base_score: item.cvss3_score || null,
+          cvss3_scoring_vector: item.cvss3_scoring_vector || null,
+          status: 'verified'
+        } : null,
+        cwe: item.CWE || item.cwe || null,
+        details: Array.isArray(item.details) ? item.details : (item.details ? [item.details] : []),
+        affected_packages: Array.isArray(item.affected_packages) ? item.affected_packages : [],
+        affected_release: item.affected_release,
+        resource_url: `https://access.redhat.com/security/cve/${item.CVE}`,
+        upstream_fix: item.upstream_fix,
+        references: Array.isArray(item.references) ? item.references : []
+      }
+    })
 
     // Sort by public_date (newest first)
     enrichedCves.sort((a, b) => new Date(b.public_date).getTime() - new Date(a.public_date).getTime())
