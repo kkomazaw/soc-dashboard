@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Shield,
@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Info,
 } from 'lucide-react'
-import { getNvdCves, refreshNvdData, getNvdApiStatus } from '@/services/api/nvdApi'
+import { getNvdCves, refreshNvdData, getNvdApiStatus, searchNvdCve } from '@/services/api/nvdApi'
 import { ExportButton } from '../common/ExportButton'
 import { exportNvd } from '@/services/api/exportApi'
 
@@ -19,6 +19,8 @@ export const NvdList = () => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
+  const [apiSearchResult, setApiSearchResult] = useState<any>(null)
+  const [isSearching, setIsSearching] = useState(false)
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['nvd-cves'],
@@ -29,6 +31,35 @@ export const NvdList = () => {
     queryKey: ['nvd-status'],
     queryFn: getNvdApiStatus,
   })
+
+  // Search for specific CVE ID via API when pattern matches
+  useEffect(() => {
+    const isCveIdSearch = /^CVE-\d{4}-\d{4,}$/i.test(searchTerm.trim())
+
+    if (isCveIdSearch) {
+      const searchCveId = async () => {
+        setIsSearching(true)
+        try {
+          console.log(`Searching for ${searchTerm.trim()} via API...`)
+          const result = await searchNvdCve(searchTerm.trim().toUpperCase())
+          if (result.success && result.data) {
+            setApiSearchResult(result.data)
+            console.log(`✅ Found ${searchTerm} from ${result.source}`)
+          } else {
+            setApiSearchResult(null)
+          }
+        } catch (error) {
+          console.error('CVE search failed:', error)
+          setApiSearchResult(null)
+        } finally {
+          setIsSearching(false)
+        }
+      }
+      searchCveId()
+    } else {
+      setApiSearchResult(null)
+    }
+  }, [searchTerm])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -64,7 +95,8 @@ export const NvdList = () => {
     return 'text-green-600'
   }
 
-  const filteredCves = data?.data.filter((cve) => {
+  // Build filtered CVE list
+  let filteredCves = data?.data.filter((cve) => {
     const matchesSearch =
       searchTerm === '' ||
       cve.cveId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,6 +109,21 @@ export const NvdList = () => {
     return matchesSearch && matchesSeverity
   })
 
+  // If we have an API search result and it's not already in the filtered list, add it at the top
+  if (apiSearchResult && filteredCves) {
+    const alreadyInList = filteredCves.some(cve => cve.cveId === apiSearchResult.cveId)
+    if (!alreadyInList) {
+      // Check if it matches severity filter
+      const matchesSeverity =
+        severityFilter === 'all' ||
+        (apiSearchResult.cvssSeverity && apiSearchResult.cvssSeverity.toLowerCase() === severityFilter.toLowerCase())
+
+      if (matchesSeverity) {
+        filteredCves = [apiSearchResult, ...filteredCves]
+      }
+    }
+  }
+
   // Pagination calculations
   const totalItems = filteredCves?.length || 0
   const totalPages = Math.ceil(totalItems / itemsPerPage)
@@ -88,6 +135,10 @@ export const NvdList = () => {
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
+    // Clear API search result when search term is cleared
+    if (!value) {
+      setApiSearchResult(null)
+    }
   }
 
   const handleSeverityChange = (value: string) => {
@@ -100,7 +151,7 @@ export const NvdList = () => {
     setCurrentPage(1)
   }
 
-  if (isLoading) {
+  if (isLoading && !isSearching) {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
@@ -211,14 +262,33 @@ export const NvdList = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
-            <input
-              type="text"
-              placeholder="CVE ID, description..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Search
+              {isSearching && (
+                <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                  (Searching NVD API...)
+                </span>
+              )}
+              {apiSearchResult && (
+                <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                  ✓ Found from API
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="CVE ID, description..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Severity</label>
