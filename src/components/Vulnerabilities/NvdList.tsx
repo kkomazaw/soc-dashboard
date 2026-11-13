@@ -12,6 +12,7 @@ import {
 import { getNvdCves, refreshNvdData, getNvdApiStatus, searchNvdCve } from '@/services/api/nvdApi'
 import { ExportButton } from '../common/ExportButton'
 import { exportNvd } from '@/services/api/exportApi'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 export const NvdList = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -180,7 +181,19 @@ export const NvdList = () => {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">NVD CVE Database</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">NVD CVE Database</h2>
+            <HelpTooltip
+              title="NVD CVE データベースについて"
+              content={[
+                'NIST（米国国立標準技術研究所）が管理する、世界で最も包括的な脆弱性データベースです。',
+                'すべてのCVE（Common Vulnerabilities and Exposures）に対して、詳細な情報、CVSSスコア、影響を受けるシステム、参照情報などを提供しています。',
+                'CVE IDで検索すると、データベースにない最新のCVEも自動的にNVD APIから取得して表示します。',
+                '重要度（Critical、High、Medium、Low）でフィルタリングして、優先度の高い脆弱性を素早く確認できます。'
+              ]}
+              size="md"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <ExportButton onExport={handleExport} label="Export" />
             <button

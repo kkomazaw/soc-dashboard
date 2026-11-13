@@ -4,6 +4,7 @@ import { AlertCircle, Calendar, Clock, ExternalLink, ChevronLeft, ChevronRight }
 import { ExportButton } from '../common/ExportButton'
 import { exportCisaKev } from '@/services/api/exportApi'
 import { useState } from 'react'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 const ITEMS_PER_PAGE = 50
 
@@ -75,9 +76,21 @@ export const CisaKevList = () => {
     <div className="space-y-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            CISA Known Exploited Vulnerabilities
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              CISA Known Exploited Vulnerabilities
+            </h2>
+            <HelpTooltip
+              title="CISA KEVについて"
+              content={[
+                'CISA（米国サイバーセキュリティ・インフラストラクチャセキュリティ庁）が管理する、実際に悪用が確認されている脆弱性のカタログです。',
+                '単なる脆弱性ではなく、「実際に攻撃に使用されている」ことが確認された重大な脆弱性のみが掲載されており、最優先で対処すべき情報源です。',
+                '各脆弱性には、修正期限（Due Date）と必須対応アクション（Required Action）が明記されており、組織のパッチ適用計画の優先順位決定に不可欠です。',
+                '新規追加された脆弱性（24時間以内）は赤色で強調表示されます。'
+              ]}
+              size="md"
+            />
+          </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-400">
               総件数: {vulnerabilities?.length || 0}件

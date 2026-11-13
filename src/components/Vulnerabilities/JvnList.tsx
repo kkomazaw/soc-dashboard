@@ -13,6 +13,7 @@ import {
 import { getJvnVulnerabilities, refreshJvnData } from '@/services/api/jvnApi'
 import { ExportButton } from '../common/ExportButton'
 import { exportJvn } from '@/services/api/exportApi'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 const ITEMS_PER_PAGE = 50
 
@@ -169,7 +170,19 @@ export const JvnList = () => {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">JVN 脆弱性情報</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">JVN 脆弱性情報</h2>
+            <HelpTooltip
+              title="JVN脆弱性情報について"
+              content={[
+                'JVN（Japan Vulnerability Notes）は、IPA（情報処理推進機構）とJPCERT/CCが共同運営する日本の脆弱性情報ポータルです。',
+                '日本で広く使われている製品やシステムの脆弱性情報を日本語で提供しており、国内環境での脆弱性対応に不可欠な情報源です。',
+                'JPCERT/CCの緊急注意喚起も含まれており、国内で特に影響の大きい脆弱性や攻撃活動を迅速に把握できます。',
+                'CVE IDとの対応関係も明示されており、NVDなどのグローバル情報源との相互参照が可能です。'
+              ]}
+              size="md"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <ExportButton onExport={handleExport} label="Export" />
             <button

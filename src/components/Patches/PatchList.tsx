@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { getPatches, getPatchStats, refreshPatches, updatePatchDeploymentStatus } from '@/services/api/patchApi'
 import type { VendorPatch } from '@/services/api/patchApi'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 const ITEMS_PER_PAGE = 50
 
@@ -159,7 +160,19 @@ export const PatchList = () => {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Patch Management</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Patch Management</h2>
+            <HelpTooltip
+              title="パッチ管理について"
+              content={[
+                '主要ベンダー（Microsoft、Red Hat、Cisco、VMware、Oracle、Adobe、Fortinet、Palo Alto Networks）から公開されるセキュリティパッチを一元管理するシステムです。',
+                'パッチの重要度（Critical、Important、Moderate）や展開ステータス（Pending、Testing、Deployed）でフィルタリングして、優先的に適用すべきパッチを把握できます。',
+                '各パッチには関連するCVE情報、影響を受ける製品、リリース日などの詳細情報が含まれており、クリックすると詳細を確認できます。',
+                '展開ステータスを更新することで、パッチ適用の進捗状況を追跡できます。'
+              ]}
+              size="md"
+            />
+          </div>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}

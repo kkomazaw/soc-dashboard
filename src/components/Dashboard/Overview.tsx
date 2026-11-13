@@ -22,6 +22,7 @@ import { getMappingStats, triggerMappingAll } from '@/services/api/mappingApi'
 import { SeverityDistributionChart } from './SeverityDistributionChart'
 import { VulnerabilityTimelineChart } from './VulnerabilityTimelineChart'
 import { AttackTacticsChart } from './AttackTacticsChart'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 export const Overview = () => {
   const queryClient = useQueryClient()
@@ -160,8 +161,20 @@ export const Overview = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SOC Dashboard Overview</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SOC Dashboard Overview</h2>
+          <HelpTooltip
+            title="SOCダッシュボードについて"
+            content={[
+              'SOC（Security Operations Center）の統合ダッシュボードです。複数の脅威インテリジェンスソースから収集した情報を一元的に表示します。',
+              'CISA KEV（実際に悪用されている脆弱性）、NVD（包括的なCVEデータベース）、JVN（日本の脆弱性情報）、セキュリティニュースなど、重要な情報源を統合しています。',
+              '重要度別の脆弱性分布、時系列の脆弱性トレンド、MITRE ATT&CKの戦術別テクニック分布などを視覚化して、セキュリティ態勢を包括的に把握できます。',
+              '各統計カードをクリックすると、詳細ページに移動して、より詳しい情報を確認できます。'
+            ]}
+            size="md"
+          />
+        </div>
+        <p className="text-gray-600 dark:text-gray-400">
           Security Operations Center - 脅威インテリジェンス統合ダッシュボード
         </p>
       </div>
