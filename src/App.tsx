@@ -23,6 +23,7 @@ const GlobalSearch = lazy(() => import('./components/Search/GlobalSearch').then(
 const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').then(m => ({ default: m.CVETimeline })))
 const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalytics').then(m => ({ default: m.CisaKevAnalytics })))
 const NvdAnalytics = lazy(() => import('./components/Analytics/NvdAnalytics').then(m => ({ default: m.NvdAnalytics })))
+const PatchList = lazy(() => import('./components/Patches/PatchList').then(m => ({ default: m.PatchList })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,8 @@ function AppContent() {
         return <NvdAnalytics />
       case 'redhat':
         return <RedHatSecurityList />
+      case 'patch-management':
+        return <PatchList />
       case 'global-search':
         return <GlobalSearch />
       case 'cve-timeline':

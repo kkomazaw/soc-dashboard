@@ -115,6 +115,31 @@ export const JvnList = () => {
     setCurrentPage(1)
   }
 
+  // Extract ID from URL or full identifier string
+  const extractJvnId = (identifier: string): string => {
+    // If it's a URL, extract the ID from it
+    if (identifier.startsWith('http')) {
+      // For JPCERT URLs like https://www.jpcert.or.jp/at/2024/at240001.html
+      const jpcertMatch = identifier.match(/at-?(\d{4}-\d{4})/i)
+      if (jpcertMatch) {
+        return `JPCERT-${jpcertMatch[1]}`
+      }
+      // For JVN URLs like https://jvn.jp/vu/JVNVU98765432/
+      const jvnMatch = identifier.match(/JVN[A-Z]*#?(\d{8})/i)
+      if (jvnMatch) {
+        return `JVN#${jvnMatch[1]}`
+      }
+      // Extract filename or last segment
+      const segments = identifier.split('/').filter(s => s)
+      const lastSegment = segments[segments.length - 1]
+      if (lastSegment) {
+        // Remove file extension
+        return lastSegment.replace(/\.(html|php|htm)$/, '')
+      }
+    }
+    return identifier
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -243,22 +268,22 @@ export const JvnList = () => {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-48">
                   JVN ID
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   タイトル
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                   深刻度
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
                   CVSS
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-32">
                   公開日
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
                   リンク
                 </th>
               </tr>
@@ -267,18 +292,18 @@ export const JvnList = () => {
               {displayVulnerabilities && displayVulnerabilities.length > 0 ? (
                 displayVulnerabilities.map((vuln) => (
                   <tr key={vuln.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap w-48">
                       <div className="flex flex-col">
                         <span className="text-sm font-mono font-medium text-gray-900 dark:text-gray-100">
-                          {vuln.jvnId}
+                          {extractJvnId(vuln.jvnId)}
                         </span>
                         {vuln.cveId && (
                           <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{vuln.cveId}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="max-w-md">
+                    <td className="px-4 py-4">
+                      <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
                           {vuln.title}
                         </p>
@@ -289,7 +314,7 @@ export const JvnList = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap w-24">
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${getSeverityColor(
                           vuln.severity
@@ -298,12 +323,12 @@ export const JvnList = () => {
                         {vuln.severity || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap w-20">
                       <span className={`text-sm font-semibold ${getCvssColor(vuln.cvssScore)}`}>
                         {vuln.cvssScore?.toFixed(1) || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap w-32">
                       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         <Calendar className="w-4 h-4" />
                         {vuln.publishedDate
@@ -311,7 +336,7 @@ export const JvnList = () => {
                           : 'N/A'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap w-20 text-center">
                       {vuln.references && (
                         <a
                           href={vuln.references}

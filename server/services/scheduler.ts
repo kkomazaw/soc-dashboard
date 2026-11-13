@@ -7,6 +7,7 @@ import {
   syncAttackData,
   syncNewsData,
   syncEpssData,
+  syncGeoThreatData,
 } from './dataSync'
 
 /**
@@ -80,6 +81,17 @@ export const initializeScheduler = () => {
     }
   })
 
+  // Sync geographic threat data every 6 hours (offset by 5 hours)
+  // Runs at: 05:00, 11:00, 17:00, 23:00
+  cron.schedule('0 5,11,17,23 * * *', async () => {
+    console.log('⏰ Running scheduled geographic threat sync...')
+    try {
+      await syncGeoThreatData()
+    } catch (error) {
+      console.error('Scheduled geographic threat sync failed:', error)
+    }
+  })
+
   // Run initial sync on startup (after a short delay)
   setTimeout(async () => {
     console.log('🚀 Running initial data sync on startup...')
@@ -96,6 +108,7 @@ export const initializeScheduler = () => {
   console.log('   - NVD: Every 12 hours (02:00, 14:00)')
   console.log('   - MITRE ATT&CK: Weekly (Sunday at 03:00)')
   console.log('   - EPSS: Daily (04:00)')
+  console.log('   - Geographic Threats: Every 6 hours (05:00, 11:00, 17:00, 23:00)')
   console.log('   - News Feed: Every 1 hour (on the hour)')
   console.log('   - Initial sync: Starting in 3 seconds...')
 }

@@ -14,6 +14,8 @@ import analyticsRouter from './routes/analytics'
 import twitterRouter from './routes/twitter'
 import cveTimelineRouter from './routes/cveTimeline'
 import epssRouter from './routes/epss'
+import geoThreatRouter from './routes/geoThreat'
+import patchRouter from './routes/patch'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -37,6 +39,8 @@ app.use('/api/analytics', analyticsRouter)
 app.use('/api/twitter', twitterRouter)
 app.use('/api/cve', cveTimelineRouter)
 app.use('/api/epss', epssRouter)
+app.use('/api/geo-threat', geoThreatRouter)
+app.use('/api/patches', patchRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -92,6 +96,21 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/epss/:cveId`)
   console.log(`   - POST /api/epss/refresh`)
   console.log(`   - POST /api/epss/bulk`)
+  console.log(`   - GET  /api/geo-threat/aggregations`)
+  console.log(`   - GET  /api/geo-threat/top-countries`)
+  console.log(`   - GET  /api/geo-threat/stats`)
+  console.log(`   - GET  /api/geo-threat/recent`)
+  console.log(`   - GET  /api/geo-threat/country/:countryCode`)
+  console.log(`   - GET  /api/geo-threat/check/:ipAddress`)
+  console.log(`   - GET  /api/geo-threat/api-stats`)
+  console.log(`   - POST /api/geo-threat/refresh`)
+  console.log(`   - POST /api/geo-threat/cleanup`)
+  console.log(`   - GET  /api/patches`)
+  console.log(`   - GET  /api/patches/stats`)
+  console.log(`   - GET  /api/patches/calendar`)
+  console.log(`   - GET  /api/patches/:patchId`)
+  console.log(`   - POST /api/patches/refresh`)
+  console.log(`   - PATCH /api/patches/:patchId/status`)
   console.log(`   - GET  /health`)
   console.log('')
 
@@ -99,7 +118,9 @@ app.listen(PORT, () => {
   console.log(`🔑 API Configuration:`)
   console.log(`   - VirusTotal: ${process.env.VIRUSTOTAL_API_KEY ? '✅ Configured' : '❌ Not configured'}`)
   console.log(`   - AbuseIPDB: ${process.env.ABUSEIPDB_API_KEY ? '✅ Configured' : '❌ Not configured'}`)
+  console.log(`   - AlienVault OTX: ${process.env.OTX_API_KEY ? '✅ Configured' : '❌ Not configured'}`)
   console.log(`   - NVD: ${process.env.NVD_API_KEY ? '✅ Configured' : '⚠️  Not configured (using public API with limits)'}`)
+  console.log(`   - MSRC: ${process.env.MSRC_API_KEY ? '✅ Configured' : '⚠️  Not configured (using public API with limits)'}`)
   console.log(`   - Twitter: ${process.env.TWITTER_BEARER_TOKEN ? '✅ Configured' : '❌ Not configured'}`)
   console.log('')
 

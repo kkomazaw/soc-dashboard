@@ -220,6 +220,104 @@ model EpssScore {
   @@map("epss_scores")
 }
 
+// IP Threat Reports (raw data from threat intelligence sources)
+model IpThreatReport {
+  id                Int       @id @default(autoincrement())
+  ipAddress         String    @map("ip_address")
+  countryCode       String    @map("country_code") // ISO 3166-1 alpha-2 (US, CN, RU, etc.)
+  country           String
+  threatType        String    @map("threat_type") // 'malware', 'phishing', 'scanning', 'ddos', etc.
+  severity          String    // 'critical', 'high', 'medium', 'low'
+  confidence        Int       // Confidence score 0-100
+  source            String    // 'abuseipdb', 'otx', 'internal'
+  sourceReportId    String?   @map("source_report_id") // External ID from the source
+  description       String?
+  reportedDate      DateTime  @map("reported_date")
+  metadata          String?   // JSON string with additional details
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@unique([ipAddress, source, reportedDate], name: "ipAddress_source_reportedDate")
+  @@index([ipAddress])
+  @@index([countryCode])
+  @@index([reportedDate])
+  @@index([severity])
+  @@index([source])
+  @@map("ip_threat_reports")
+}
+
+// Geographic Threat Aggregation (pre-calculated statistics by country)
+model GeoThreatAggregation {
+  id               Int       @id @default(autoincrement())
+  countryCode      String    @unique @map("country_code")
+  country          String
+  threatCount      Int       @map("threat_count")
+  criticalCount    Int       @map("critical_count")
+  highCount        Int       @map("high_count")
+  mediumCount      Int       @map("medium_count")
+  lowCount         Int       @map("low_count")
+  topThreats       String    @map("top_threats") // JSON string array of most common threat types
+  uniqueIps        Int       @map("unique_ips") // Count of unique malicious IPs
+  lastReportDate   DateTime  @map("last_report_date")
+  calculatedAt     DateTime  @map("calculated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([countryCode])
+  @@index([threatCount])
+  @@index([calculatedAt])
+  @@map("geo_threat_aggregations")
+}
+
+// Vendor Patches (Microsoft, Cisco, VMware, Oracle, etc.)
+model VendorPatch {
+  id                Int       @id @default(autoincrement())
+
+  // Vendor Information
+  vendor            String    // Microsoft, RedHat, Cisco, VMware, Oracle, etc.
+  product           String    // Windows, Office, RHEL, IOS, ESXi, etc.
+  productVersion    String?   @map("product_version") // 10, 11, 2019, 8.0, etc.
+
+  // Patch Information
+  patchId           String    @unique @map("patch_id") // KB5001234, cisco-sa-*, VMSA-*, etc.
+  title             String
+  description       String?
+  severity          String    // Critical, Important/High, Moderate/Medium, Low
+
+  // CVE Related
+  cveIds            String?   @map("cve_ids") // JSON array of CVE IDs
+  cveCount          Int       @default(0) @map("cve_count")
+
+  // Release Information
+  releaseDate       DateTime  @map("release_date")
+  releaseType       String    @default("regular") @map("release_type") // regular, out-of-band, emergency
+
+  // Links
+  bulletinUrl       String?   @map("bulletin_url")
+  downloadUrl       String?   @map("download_url")
+  kbArticleUrl      String?   @map("kb_article_url")
+
+  // Metadata
+  supersedes        String?   // JSON array of patch IDs this replaces
+  supersededBy      String?   @map("superseded_by") // JSON array of newer patches
+  affectedSystems   String?   @map("affected_systems") // JSON array of system names
+
+  // Deployment Status Tracking
+  deploymentStatus  String    @default("pending") @map("deployment_status") // pending, testing, deployed, skipped
+  deploymentDate    DateTime? @map("deployment_date")
+  deploymentNotes   String?   @map("deployment_notes")
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([vendor])
+  @@index([severity])
+  @@index([releaseDate])
+  @@index([deploymentStatus])
+  @@index([patchId])
+  @@map("vendor_patches")
+}
+
 // App Settings
 model AppSetting {
   id        Int      @id @default(autoincrement())

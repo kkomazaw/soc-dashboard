@@ -35,8 +35,8 @@ const IocSearch = () => {
     fetchApiStatus()
   }, [])
 
-  const handleSearch = async () => {
-    if (!searchInput.trim()) {
+  const performSearch = async (type: SearchType, query: string) => {
+    if (!query.trim()) {
       setError('Please enter a value to search')
       return
     }
@@ -48,14 +48,14 @@ const IocSearch = () => {
     setIpResult(null)
 
     try {
-      if (searchType === 'hash') {
-        const result = await searchFileHash(searchInput.trim())
+      if (type === 'hash') {
+        const result = await searchFileHash(query.trim())
         setHashResult(result)
-      } else if (searchType === 'url') {
-        const result = await searchUrl(searchInput.trim())
+      } else if (type === 'url') {
+        const result = await searchUrl(query.trim())
         setUrlResult(result)
-      } else if (searchType === 'ip') {
-        const result = await searchIpAddress(searchInput.trim())
+      } else if (type === 'ip') {
+        const result = await searchIpAddress(query.trim())
         setIpResult(result)
       }
     } catch (err: any) {
@@ -69,6 +69,10 @@ const IocSearch = () => {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSearch = async () => {
+    await performSearch(searchType, searchInput)
   }
 
   const getThreatLevel = (score: number): { color: string; label: string } => {

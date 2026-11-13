@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Target, AlertTriangle, TrendingUp, Filter } from 'lucide-react'
+import { Target, AlertTriangle, TrendingUp, Filter, X, ExternalLink } from 'lucide-react'
 
 interface TechniqueMapping {
   techniqueId: string
@@ -24,6 +24,7 @@ export const AttackHeatMap = ({ mappings = [], techniques = [] }: AttackHeatMapP
   const [selectedTactic, setSelectedTactic] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'cveCount' | 'critical' | 'recent'>('cveCount')
   const [minCves, setMinCves] = useState<number>(1)
+  const [selectedTechnique, setSelectedTechnique] = useState<string | null>(null)
 
   // Process mappings to create heat map data
   const heatMapData = useMemo(() => {
@@ -120,6 +121,39 @@ export const AttackHeatMap = ({ mappings = [], techniques = [] }: AttackHeatMapP
 
     return { total, criticalTotal, highTotal, recentTotal }
   }, [filteredData])
+
+  // Get CVEs for selected technique
+  const selectedTechniqueCVEs = useMemo(() => {
+    if (!selectedTechnique) return []
+
+    return mappings
+      .filter((m: any) => {
+        const techId = m.techniqueId || m.technique_id
+        return techId === selectedTechnique
+      })
+      .map((m: any) => ({
+        cveId: m.cveId,
+        severity: m.severity || 'MEDIUM',
+        publishedDate: m.publishedDate,
+        source: m.source,
+      }))
+      .sort((a, b) => {
+        // Sort by severity first
+        const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
+        const aSev = severityOrder[a.severity.toUpperCase() as keyof typeof severityOrder] ?? 4
+        const bSev = severityOrder[b.severity.toUpperCase() as keyof typeof severityOrder] ?? 4
+        if (aSev !== bSev) return aSev - bSev
+
+        // Then by date
+        return new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
+      })
+  }, [selectedTechnique, mappings])
+
+  const selectedTechniqueData = useMemo(() => {
+    if (!selectedTechnique) return null
+    return filteredData.find(t => t.techniqueId === selectedTechnique) ||
+           heatMapData.find(t => t.techniqueId === selectedTechnique)
+  }, [selectedTechnique, filteredData, heatMapData])
 
   return (
     <div className="space-y-4">
@@ -224,6 +258,7 @@ export const AttackHeatMap = ({ mappings = [], techniques = [] }: AttackHeatMapP
             {filteredData.map((tech) => (
               <div
                 key={tech.techniqueId}
+                onClick={() => setSelectedTechnique(tech.techniqueId)}
                 className="group relative bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-all cursor-pointer border border-gray-600 hover:border-blue-500"
               >
                 <div className="flex items-start gap-3">
@@ -323,6 +358,126 @@ export const AttackHeatMap = ({ mappings = [], techniques = [] }: AttackHeatMapP
           </div>
         </div>
       </div>
+
+      {/* CVE Detail Modal */}
+      {selectedTechnique && selectedTechniqueData && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm" onClick={() => setSelectedTechnique(null)}>
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden bg-gray-900 rounded-xl shadow-2xl border border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-900 to-blue-900 px-6 py-4 flex items-start justify-between border-b border-gray-700">
+                <div className="flex-1 pr-8">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-5 h-5 text-purple-300" />
+                    <span className="text-sm font-mono text-purple-300">{selectedTechniqueData.techniqueId}</span>
+                    <span className="text-xs px-2 py-0.5 bg-purple-800 text-purple-200 rounded">
+                      {selectedTechniqueData.tactic}
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-1">
+                    {selectedTechniqueData.techniqueName}
+                  </h2>
+                  <p className="text-sm text-blue-200">
+                    {selectedTechniqueCVEs.length} CVE{selectedTechniqueCVEs.length !== 1 ? 's' : ''} mapped to this technique
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedTechnique(null)}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
+                {/* Summary Stats */}
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                  <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                    <p className="text-xs text-gray-400 mb-1">Total CVEs</p>
+                    <p className="text-xl font-bold text-white">{selectedTechniqueData.cveCount}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3 border border-red-900">
+                    <p className="text-xs text-red-400 mb-1">Critical</p>
+                    <p className="text-xl font-bold text-red-400">{selectedTechniqueData.severity.critical}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3 border border-orange-900">
+                    <p className="text-xs text-orange-400 mb-1">High</p>
+                    <p className="text-xl font-bold text-orange-400">{selectedTechniqueData.severity.high}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3 border border-purple-900">
+                    <p className="text-xs text-purple-400 mb-1">Recent (30d)</p>
+                    <p className="text-xl font-bold text-purple-400">{selectedTechniqueData.recentActivity}</p>
+                  </div>
+                </div>
+
+                {/* CVE List */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">Related CVEs</h3>
+                  {selectedTechniqueCVEs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No CVEs found for this technique
+                    </div>
+                  ) : (
+                    selectedTechniqueCVEs.map((cve, index) => {
+                      const severityColors = {
+                        CRITICAL: 'border-red-700 bg-red-900/20',
+                        HIGH: 'border-orange-700 bg-orange-900/20',
+                        MEDIUM: 'border-yellow-700 bg-yellow-900/20',
+                        LOW: 'border-green-700 bg-green-900/20',
+                      }
+                      const severityColor = severityColors[cve.severity.toUpperCase() as keyof typeof severityColors] || 'border-gray-700 bg-gray-800'
+
+                      return (
+                        <div
+                          key={`${cve.cveId}-${index}`}
+                          className={`p-3 rounded-lg border ${severityColor} hover:bg-opacity-40 transition-colors`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1">
+                              <span className="font-mono text-sm font-semibold text-white">
+                                {cve.cveId}
+                              </span>
+                              <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                                cve.severity.toUpperCase() === 'CRITICAL' ? 'bg-red-600 text-white' :
+                                cve.severity.toUpperCase() === 'HIGH' ? 'bg-orange-600 text-white' :
+                                cve.severity.toUpperCase() === 'MEDIUM' ? 'bg-yellow-600 text-white' :
+                                'bg-green-600 text-white'
+                              }`}>
+                                {cve.severity.toUpperCase()}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {cve.source.toUpperCase()}
+                              </span>
+                              {cve.publishedDate && (
+                                <span className="text-xs text-gray-500">
+                                  {new Date(cve.publishedDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                            <a
+                              href={`https://nvd.nist.gov/vuln/detail/${cve.cveId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1 rounded hover:bg-blue-900/50 transition-colors text-blue-400"
+                              title="View on NVD"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

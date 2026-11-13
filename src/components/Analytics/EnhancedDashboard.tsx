@@ -89,15 +89,32 @@ export const EnhancedDashboard = () => {
     if (!allMappings) return []
 
     // Transform API mappings to the format expected by AttackHeatMap
-    return allMappings.map((mapping) => ({
-      cveId: mapping.cveId,
-      techniqueId: mapping.technique?.id || mapping.techniqueId,
-      techniqueName: mapping.technique?.name || '',
-      tactic: mapping.technique?.tactics?.[0] || 'Unknown',
-      severity: 'MEDIUM', // We'll need to join with CVE data to get actual severity
-      publishedDate: mapping.createdAt,
-      source: mapping.source,
-    }))
+    return allMappings.map((mapping) => {
+      // Parse tactics from JSON string to array
+      let tactic = 'Unknown'
+      if (mapping.technique?.tactics) {
+        try {
+          const tacticsArray = typeof mapping.technique.tactics === 'string'
+            ? JSON.parse(mapping.technique.tactics)
+            : mapping.technique.tactics
+          tactic = Array.isArray(tacticsArray) && tacticsArray.length > 0
+            ? tacticsArray[0]
+            : 'Unknown'
+        } catch (e) {
+          console.error('Failed to parse tactics:', e)
+        }
+      }
+
+      return {
+        cveId: mapping.cveId,
+        techniqueId: mapping.technique?.techniqueId || mapping.techniqueId,
+        techniqueName: mapping.technique?.name || '',
+        tactic,
+        severity: 'MEDIUM', // We'll need to join with CVE data to get actual severity
+        publishedDate: mapping.createdAt,
+        source: mapping.source,
+      }
+    })
   }
 
   const getTechniques = () => {

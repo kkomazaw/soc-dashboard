@@ -4,12 +4,20 @@ import { fetchJvnVulnerabilities } from './fetchers/jvnFetcher'
 import { fetchRecentNvdCves } from './fetchers/nvdFetcher'
 import { fetchAttackData } from './fetchers/attackFetcher'
 import { fetchEpssScoresByCves } from './fetchers/epssFetcher'
+import { fetchAbuseIPDBBlacklist } from './fetchers/abuseipdbFetcher'
+import { fetchOTXHighConfidenceIPs } from './fetchers/otxFetcher'
 import { saveCisaKevData, getCisaKevStats } from './database/cisaKevDb'
 import { saveNewsArticles, getNewsStats } from './database/newsDb'
 import { saveJvnVulnerabilities, getJvnStats } from './database/jvnDb'
 import { saveNvdCves, getNvdStats } from './database/nvdDb'
 import { saveAttackTechniques, saveAttackTactics, getAttackStats } from './database/attackDb'
 import { saveEpssScores, getEpssStats, getLatestScoreDate } from './database/epssDb'
+import {
+  saveAbuseIPDBReports,
+  saveOTXReports,
+  calculateGeoThreatAggregations,
+  getGeoThreatStats,
+} from './database/geoThreatDb'
 import { prisma } from './database/prismaClient'
 
 /**
@@ -162,6 +170,46 @@ export const syncEpssData = async (): Promise<void> => {
 }
 
 /**
+ * Sync geographic threat data from external sources
+ */
+export const syncGeoThreatData = async (): Promise<void> => {
+  try {
+    console.log('⏳ Starting geographic threat data sync...')
+
+    // Fetch from both sources in parallel
+    const [abuseReports, otxReports] = await Promise.allSettled([
+      fetchAbuseIPDBBlacklist(100, 90), // 100 IPs with 90+ confidence
+      fetchOTXHighConfidenceIPs(),
+    ])
+
+    const abuseData = abuseReports.status === 'fulfilled' ? abuseReports.value : []
+    const otxData = otxReports.status === 'fulfilled' ? otxReports.value : []
+
+    // Save to database
+    if (abuseData.length > 0) {
+      await saveAbuseIPDBReports(abuseData)
+    }
+    if (otxData.length > 0) {
+      await saveOTXReports(otxData)
+    }
+
+    // Calculate aggregations
+    if (abuseData.length > 0 || otxData.length > 0) {
+      await calculateGeoThreatAggregations()
+    }
+
+    const stats = await getGeoThreatStats()
+    console.log(
+      `✅ Geographic threat sync complete: ${abuseData.length} AbuseIPDB + ${otxData.length} OTX reports, ${stats.totalCountries} countries`
+    )
+  } catch (error) {
+    console.error('❌ Failed to sync geographic threat data:', error)
+    // Don't throw error to avoid blocking other syncs
+    console.warn('Continuing with other syncs despite geographic threat sync failure...')
+  }
+}
+
+/**
  * Sync all data sources
  */
 export const syncAllData = async (): Promise<void> => {
@@ -177,6 +225,7 @@ export const syncAllData = async (): Promise<void> => {
       syncAttackData(),
       syncNewsData(),
       syncEpssData(),
+      syncGeoThreatData(),
     ])
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
@@ -192,14 +241,16 @@ export const syncAllData = async (): Promise<void> => {
  */
 export const getSyncStatus = async () => {
   try {
-    const [cisaStats, jvnStats, nvdStats, attackStats, newsStats, epssStats] = await Promise.all([
-      getCisaKevStats(),
-      getJvnStats(),
-      getNvdStats(),
-      getAttackStats(),
-      getNewsStats(),
-      getEpssStats(),
-    ])
+    const [cisaStats, jvnStats, nvdStats, attackStats, newsStats, epssStats, geoThreatStats] =
+      await Promise.all([
+        getCisaKevStats(),
+        getJvnStats(),
+        getNvdStats(),
+        getAttackStats(),
+        getNewsStats(),
+        getEpssStats(),
+        getGeoThreatStats(),
+      ])
 
     const latestEpssDate = await getLatestScoreDate()
 
@@ -213,6 +264,7 @@ export const getSyncStatus = async () => {
         ...epssStats,
         latestScoreDate: latestEpssDate,
       },
+      geoThreat: geoThreatStats,
       lastSync: new Date().toISOString(),
     }
   } catch (error) {

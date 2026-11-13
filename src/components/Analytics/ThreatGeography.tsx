@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Globe, MapPin, AlertTriangle, TrendingUp, BarChart3 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Globe, MapPin, AlertTriangle, TrendingUp, BarChart3, RefreshCw } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { fetchAllAggregations, refreshGeoThreatData } from '../../api/geoThreatApi'
+import { WorldThreatMap } from './WorldThreatMap'
+import { CountryThreatDetail } from './CountryThreatDetail'
 
 interface ThreatLocation {
   country: string
@@ -122,9 +126,54 @@ const MOCK_THREAT_DATA: ThreatLocation[] = [
   },
 ]
 
-export const ThreatGeography = ({ threatData = MOCK_THREAT_DATA }: ThreatGeographyProps) => {
+export const ThreatGeography = ({ threatData: propThreatData }: ThreatGeographyProps) => {
   const [sortBy, setSortBy] = useState<'total' | 'critical' | 'high'>('total')
   const [viewMode, setViewMode] = useState<'map' | 'list'>('list')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [selectedCountry, setSelectedCountry] = useState<{ code: string; name: string } | null>(null)
+
+  // Fetch real geographic threat data from API
+  const { data: apiData, isLoading, refetch } = useQuery({
+    queryKey: ['geoThreatAggregations'],
+    queryFn: fetchAllAggregations,
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
+  })
+
+  // Map API data to component format
+  const threatData = useMemo(() => {
+    if (propThreatData) return propThreatData // Use prop data if provided
+    if (!apiData || apiData.length === 0) return MOCK_THREAT_DATA // Fallback to mock data
+
+    return apiData.map(location => ({
+      country: location.country,
+      countryCode: location.countryCode,
+      threatCount: location.threatCount,
+      critical: location.criticalCount,
+      high: location.highCount,
+      medium: location.mediumCount,
+      low: location.lowCount,
+      topThreats: location.topThreats,
+    }))
+  }, [apiData, propThreatData])
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshGeoThreatData(100, 90)
+      await refetch()
+    } catch (error) {
+      console.error('Failed to refresh geographic threat data:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  // Handle country click for drill-down
+  const handleCountryClick = (countryCode: string, countryName: string) => {
+    setSelectedCountry({ code: countryCode, name: countryName })
+  }
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -225,6 +274,19 @@ export const ThreatGeography = ({ threatData = MOCK_THREAT_DATA }: ThreatGeograp
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+            className={`px-3 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
+              isRefreshing || isLoading
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+            title="Refresh geographic threat data"
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
           <BarChart3 className="w-4 h-4 text-gray-400" />
           <div className="flex gap-1">
             {(['list', 'map'] as const).map((mode) => (
@@ -285,7 +347,8 @@ export const ThreatGeography = ({ threatData = MOCK_THREAT_DATA }: ThreatGeograp
             {sortedData.map((location, index) => (
               <div
                 key={location.countryCode}
-                className="group bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-all border border-gray-600 hover:border-blue-500"
+                onClick={() => handleCountryClick(location.countryCode, location.country)}
+                className="group bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-all border border-gray-600 hover:border-blue-500 cursor-pointer"
               >
                 <div className="flex items-start gap-3">
                   {/* Rank & Color Indicator */}
@@ -374,25 +437,19 @@ export const ThreatGeography = ({ threatData = MOCK_THREAT_DATA }: ThreatGeograp
         </div>
       )}
 
-      {/* World Map Placeholder */}
+      {/* World Map View */}
       {viewMode === 'map' && (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 min-h-[400px] flex items-center justify-center">
-          <div className="text-center">
-            <Globe className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-300 mb-2">Interactive World Map</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Geographic threat visualization coming soon
-            </p>
-            <p className="text-xs text-gray-500">
-              Will integrate with IP geolocation services to display threats on an interactive world map
-            </p>
-            <button
-              onClick={() => setViewMode('list')}
-              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-            >
-              View as List
-            </button>
-          </div>
+        <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden" style={{ height: '600px' }}>
+          {isLoading ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center">
+                <RefreshCw className="w-12 h-12 mx-auto mb-4 text-blue-500 animate-spin" />
+                <p className="text-sm text-gray-400">Loading geographic threat data...</p>
+              </div>
+            </div>
+          ) : (
+            <WorldThreatMap data={sortedData} onCountryClick={handleCountryClick} />
+          )}
         </div>
       )}
 
@@ -403,13 +460,23 @@ export const ThreatGeography = ({ threatData = MOCK_THREAT_DATA }: ThreatGeograp
           <div className="text-xs text-blue-300">
             <p className="font-semibold mb-1">Data Source Information</p>
             <p className="text-blue-200">
-              Geographic threat data is currently showing sample data. In production, this will be integrated with
-              IP geolocation services (AbuseIPDB, AlienVault OTX, etc.) to show real threat origins based on
-              malicious IP addresses and attack sources.
+              Geographic threat data is sourced from IP geolocation services including AbuseIPDB and AlienVault OTX.
+              Data shows real threat origins based on malicious IP addresses and attack sources. Data is
+              automatically refreshed every 6 hours, or you can manually refresh using the button above.
+              Click on any country to view detailed threat reports.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Country Detail Modal */}
+      {selectedCountry && (
+        <CountryThreatDetail
+          countryCode={selectedCountry.code}
+          countryName={selectedCountry.name}
+          onClose={() => setSelectedCountry(null)}
+        />
+      )}
     </div>
   )
 }
