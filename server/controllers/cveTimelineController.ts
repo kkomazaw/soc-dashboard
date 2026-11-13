@@ -359,6 +359,9 @@ export const searchCves = async (req: Request, res: Response) => {
     const searchTerm = query.toUpperCase()
     const limit = 20
 
+    // Check if the search term looks like a CVE ID (e.g., CVE-2026-109163)
+    const isCveIdSearch = /^CVE-\d{4}-\d{4,}$/i.test(searchTerm)
+
     // Search across all sources
     const [nvdResults, cisaResults, jvnResults, redhatResults] = await Promise.all([
       prisma.nvdCve.findMany({
@@ -406,8 +409,45 @@ export const searchCves = async (req: Request, res: Response) => {
       }),
     ])
 
+    // If searching for a specific CVE ID and not found in database, try NVD API directly
+    let nvdApiResult: any = null
+    if (isCveIdSearch && nvdResults.length === 0) {
+      try {
+        console.log(`CVE ID ${searchTerm} not found in database, checking NVD API...`)
+        const apiData = await fetchCveById(searchTerm)
+        if (apiData) {
+          const description = extractDescription(apiData)
+          const cvssData = extractCvssData(apiData)
+          nvdApiResult = {
+            cveId: apiData.id,
+            description: description,
+            published: new Date(apiData.published),
+            lastModified: new Date(apiData.lastModified),
+            cvssSeverity: cvssData.severity,
+            cvssScore: cvssData.score,
+          }
+          console.log(`✅ Found ${searchTerm} in NVD API`)
+        }
+      } catch (error) {
+        console.log(`Could not fetch ${searchTerm} from NVD API`)
+      }
+    }
+
     // Combine and deduplicate by CVE ID
     const cveMap = new Map<string, any>()
+
+    // Add NVD API result first if found
+    if (nvdApiResult) {
+      cveMap.set(nvdApiResult.cveId, {
+        cveId: nvdApiResult.cveId,
+        description: nvdApiResult.description,
+        publishedDate: nvdApiResult.published,
+        severity: nvdApiResult.cvssSeverity,
+        cvssScore: nvdApiResult.cvssScore,
+        sources: ['nvd'],
+        fromApi: true, // Mark that this came from API, not database
+      })
+    }
 
     nvdResults.forEach((item) => {
       if (!cveMap.has(item.cveId)) {

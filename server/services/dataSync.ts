@@ -73,10 +73,10 @@ export const syncJvnData = async (): Promise<void> => {
 /**
  * Sync NVD CVE data from API to database
  */
-export const syncNvdData = async (daysBack: number = 7): Promise<void> => {
+export const syncNvdData = async (daysBack: number = 30): Promise<void> => {
   try {
     console.log(`⏳ Starting NVD CVE sync (last ${daysBack} days)...`)
-    const cves = await fetchRecentNvdCves(daysBack, 100)
+    const cves = await fetchRecentNvdCves(daysBack, 2000) // Increased from 100 to 2000 (NVD max)
     if (cves.length > 0) {
       await saveNvdCves(cves)
     }
