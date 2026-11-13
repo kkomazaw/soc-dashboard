@@ -9,6 +9,7 @@ export const AdvancedFilters = () => {
     { value: 'cisa', label: 'CISA KEV' },
     { value: 'jvn', label: 'JVN' },
     { value: 'nvd', label: 'NVD' },
+    { value: 'redhat', label: 'Red Hat' },
   ]
 
   const toggleSeverity = (severity: string) => {

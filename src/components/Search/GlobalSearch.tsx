@@ -5,20 +5,23 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
 import { getNvdCves } from '@/services/api/nvdApi'
+import { getAllRedHatData } from '@/services/api/redhatApi'
 import { AdvancedFilters } from './AdvancedFilters'
 import { FilterPresets } from './FilterPresets'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 interface SearchResult {
   id: string
   title: string
   description: string
   severity: string
-  source: 'cisa' | 'jvn' | 'nvd'
+  source: 'cisa' | 'jvn' | 'nvd' | 'redhat'
   publishedDate: string
   cveId?: string
   vendor?: string
   product?: string
   cvssScore?: number
+  advisoryId?: string
 }
 
 export const GlobalSearch = () => {
@@ -40,6 +43,11 @@ export const GlobalSearch = () => {
   const { data: nvdData } = useQuery({
     queryKey: ['nvd-cves'],
     queryFn: getNvdCves,
+  })
+
+  const { data: redhatData } = useQuery({
+    queryKey: ['redhat-all'],
+    queryFn: getAllRedHatData,
   })
 
   // Combine and filter results
@@ -138,8 +146,83 @@ export const GlobalSearch = () => {
       })
     }
 
+    // Add Red Hat results
+    if (redhatData && (filters.sources.length === 0 || filters.sources.includes('redhat'))) {
+      // Add Red Hat CVEs
+      if (redhatData.cves) {
+        redhatData.cves.forEach((item: any, index: number) => {
+          const matchesQuery = !filters.query ||
+            item.cveId?.toLowerCase().includes(filters.query.toLowerCase()) ||
+            item.bugzillaDesc?.toLowerCase().includes(filters.query.toLowerCase())
+
+          // Map Red Hat severity to standard severity levels
+          const normalizedSeverity = item.severity?.toUpperCase() || 'UNKNOWN'
+          const matchesSeverity = filters.severity.length === 0 ||
+            filters.severity.includes(normalizedSeverity) ||
+            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH'))
+
+          const cvssScore = parseFloat(item.cvss3Score || item.cvssScore || '0')
+          const matchesCvss = cvssScore >= filters.cvssRange.min &&
+            cvssScore <= filters.cvssRange.max
+
+          const matchesDate = (!filters.dateRange.start || new Date(item.publicDate) >= new Date(filters.dateRange.start)) &&
+            (!filters.dateRange.end || new Date(item.publicDate) <= new Date(filters.dateRange.end))
+
+          if (matchesQuery && matchesSeverity && matchesCvss && matchesDate) {
+            results.push({
+              id: item.cveId || `redhat-cve-${item.id || index}`,
+              title: item.cveId || 'Unknown CVE',
+              description: item.bugzillaDesc || item.details?.join(', ') || '',
+              severity: normalizedSeverity,
+              source: 'redhat',
+              publishedDate: item.publicDate,
+              cveId: item.cveId,
+              cvssScore: cvssScore || undefined,
+              vendor: 'Red Hat',
+            })
+          }
+        })
+      }
+
+      // Add Red Hat Advisories with CVEs
+      if (redhatData.advisories) {
+        redhatData.advisories.forEach((item: any, index: number) => {
+          // Only include advisories with CVEs
+          if (!item.cves || item.cves.length === 0) return
+
+          const matchesQuery = !filters.query ||
+            item.advisoryId?.toLowerCase().includes(filters.query.toLowerCase()) ||
+            item.synopsis?.toLowerCase().includes(filters.query.toLowerCase()) ||
+            item.cves?.some((cve: string) => cve.toLowerCase().includes(filters.query.toLowerCase()))
+
+          // Map Red Hat severity to standard severity levels
+          const normalizedSeverity = item.severity?.toUpperCase() || 'UNKNOWN'
+          const matchesSeverity = filters.severity.length === 0 ||
+            filters.severity.includes(normalizedSeverity) ||
+            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH'))
+
+          const matchesDate = (!filters.dateRange.start || new Date(item.publicDate) >= new Date(filters.dateRange.start)) &&
+            (!filters.dateRange.end || new Date(item.publicDate) <= new Date(filters.dateRange.end))
+
+          if (matchesQuery && matchesSeverity && matchesDate) {
+            results.push({
+              id: item.advisoryId || `redhat-advisory-${item.id || index}`,
+              title: `${item.advisoryId}: ${item.synopsis}`,
+              description: item.description || item.synopsis || '',
+              severity: normalizedSeverity,
+              source: 'redhat',
+              publishedDate: item.publicDate,
+              cveId: item.cves[0], // First CVE as primary
+              vendor: 'Red Hat',
+              advisoryId: item.advisoryId,
+            })
+          }
+        })
+      }
+    }
+
     return results.slice(0, 100) // Limit to 100 results
-  }, [cisaData, jvnData, nvdData, filters])
+  }, [cisaData, jvnData, nvdData, redhatData, filters])
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toUpperCase()) {
@@ -164,6 +247,8 @@ export const GlobalSearch = () => {
         return 'bg-green-600'
       case 'nvd':
         return 'bg-purple-600'
+      case 'redhat':
+        return 'bg-red-600'
       default:
         return 'bg-gray-600'
     }
@@ -173,12 +258,24 @@ export const GlobalSearch = () => {
     <div className="space-y-4">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-          <Search className="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400" />
-          グローバル検索
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          すべての脆弱性データソースを横断検索
+        <div className="flex items-center gap-2 mb-1">
+          <Search className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            脆弱性検索
+          </h2>
+          <HelpTooltip
+            title="脆弱性検索について"
+            content={[
+              '複数の脆弱性データベース（CISA KEV、JVN、NVD、Red Hat）を横断して検索できる統合検索機能です。',
+              'CVE ID、脆弱性の説明、ベンダー名、製品名などで検索できます。フィルター機能を使用して、ソース、重要度、日付範囲、CVSSスコアで絞り込むことも可能です。',
+              'プリセット機能では、「最近の重大な脆弱性」「今週の脆弱性」などの事前定義された検索条件をワンクリックで適用できます。',
+              '検索結果には各データソースからの脆弱性情報が統合され、最大100件まで表示されます。'
+            ]}
+            size="md"
+          />
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          CISA KEV、JVN、NVD、Red Hatを横断検索
         </p>
       </div>
 

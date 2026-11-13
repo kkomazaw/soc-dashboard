@@ -7,7 +7,7 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: Home },
-  { id: 'global-search', label: 'グローバル検索', icon: Filter },
+  { id: 'global-search', label: '脆弱性検索', icon: Filter },
   { id: 'cve-timeline', label: 'CVEタイムライン', icon: Calendar },
   { id: 'vulnerabilities', label: '脆弱性', icon: Shield, children: [
     { id: 'cisa-kev', label: 'CISA KEV' },
