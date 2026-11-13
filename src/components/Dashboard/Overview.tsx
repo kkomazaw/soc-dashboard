@@ -15,6 +15,7 @@ import {
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
 import { getNvdCves } from '@/services/api/nvdApi'
+import { getAllRedHatData } from '@/services/api/redhatApi'
 import { fetchAllRssFeeds } from '@/services/api/rssParser'
 import { getApiStatus } from '@/services/api/iocApi'
 import { getMatrix } from '@/services/api/attackApi'
@@ -40,6 +41,11 @@ export const Overview = () => {
   const { data: nvdData } = useQuery({
     queryKey: ['nvd-cves'],
     queryFn: getNvdCves,
+  })
+
+  const { data: redhatData } = useQuery({
+    queryKey: ['redhat-all'],
+    queryFn: getAllRedHatData,
   })
 
   const { data: newsData } = useQuery({
@@ -248,7 +254,7 @@ export const Overview = () => {
           <Database className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
           Data Sources Status
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* CISA KEV */}
           <div className="border-l-4 border-blue-500 pl-4">
             <div className="flex items-center justify-between mb-2">
@@ -292,6 +298,22 @@ export const Overview = () => {
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               CVE Database ({nvdData?.stats.recent24h || 0} new today)
+            </p>
+          </div>
+
+          {/* Red Hat */}
+          <div className="border-l-4 border-red-500 pl-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-medium text-gray-900 dark:text-gray-100">Red Hat</p>
+              <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded">
+                Active
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {((redhatData?.cves?.length || 0) + (redhatData?.advisories?.length || 0))}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Red Hat Security ({redhatData?.cves?.length || 0} CVEs, {redhatData?.advisories?.length || 0} Advisories)
             </p>
           </div>
         </div>
