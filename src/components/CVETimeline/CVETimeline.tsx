@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Calendar, AlertTriangle, Shield, FileText, Clock, ExternalLink, X, Loader2 } from 'lucide-react'
 import { useCveTimeline, useCveSearch } from '@/hooks/useCveTimeline'
 import type { TimelineEvent } from '@/services/api/cveTimelineApi'
+import { HelpTooltip } from '../common/HelpTooltip'
 
 export const CVETimeline = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,11 +112,23 @@ export const CVETimeline = () => {
     <div className="space-y-4">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-          <Calendar className="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400" />
-          CVEタイムライン
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <div className="flex items-center gap-2 mb-1">
+          <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            CVEタイムライン
+          </h2>
+          <HelpTooltip
+            title="CVEタイムラインについて"
+            content={[
+              'CVEタイムラインは、特定のCVE（Common Vulnerabilities and Exposures）に関連する情報を時系列で確認できる機能です。',
+              'CVE番号またはキーワードで検索すると、複数の脆弱性データベース（NVD、CISA KEV、JVN、Red Hat）から情報を統合して表示します。',
+              'タイムラインには、脆弱性の公開日、CISA KEVへの追加、セキュリティアドバイザリの発行、パッチのリリースなど、重要なイベントが時系列で整理されています。',
+              '各イベントには詳細情報と外部リンクが含まれており、脆弱性の経緯と対応状況を一目で把握できます。'
+            ]}
+            size="md"
+          />
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           特定のCVEに関連する情報を時系列で確認
         </p>
       </div>
