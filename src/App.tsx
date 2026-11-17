@@ -50,7 +50,7 @@ function AppContent() {
   const renderView = () => {
     switch (currentView) {
       case 'overview':
-        return <Overview />
+        return <Overview onViewChange={setCurrentView} />
       case 'vulnerabilities':
       case 'cisa-kev':
         return <CisaKevList />
@@ -81,7 +81,7 @@ function AppContent() {
       case 'attack-matrix':
         return <AttackMatrix />
       default:
-        return <Overview />
+        return <Overview onViewChange={setCurrentView} />
     }
   }
 

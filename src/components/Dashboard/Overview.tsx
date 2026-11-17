@@ -24,9 +24,15 @@ import { SeverityDistributionChart } from './SeverityDistributionChart'
 import { VulnerabilityTimelineChart } from './VulnerabilityTimelineChart'
 import { AttackTacticsChart } from './AttackTacticsChart'
 import { HelpTooltip } from '../common/HelpTooltip'
+import { useSearch } from '@/contexts/SearchContext'
 
-export const Overview = () => {
+interface OverviewProps {
+  onViewChange?: (view: string) => void
+}
+
+export const Overview = ({ onViewChange }: OverviewProps) => {
   const queryClient = useQueryClient()
+  const { updateFilters } = useSearch()
 
   const { data: cisaData } = useQuery({
     queryKey: ['cisa-kev'],
@@ -87,6 +93,78 @@ export const Overview = () => {
     }
   }
 
+  const handleCriticalThreatsClick = () => {
+    if (onViewChange) {
+      // Set filter to CRITICAL severity
+      updateFilters({
+        severity: ['CRITICAL'],
+        sources: [], // Clear source filter to show all sources
+        dateRange: { start: null, end: null }, // Clear date range
+      })
+      // Navigate to global search
+      onViewChange('global-search')
+    }
+  }
+
+  const handleHighSeverityClick = () => {
+    if (onViewChange) {
+      // Set filter to HIGH severity
+      updateFilters({
+        severity: ['HIGH'],
+        sources: [], // Clear source filter to show all sources
+        dateRange: { start: null, end: null }, // Clear date range
+      })
+      // Navigate to global search
+      onViewChange('global-search')
+    }
+  }
+
+  const handleCisaKevClick = () => {
+    if (onViewChange) {
+      // Set filter to CISA KEV source with last 3 days
+      const threeDaysAgo = new Date()
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+      const today = new Date()
+
+      updateFilters({
+        severity: [], // Clear severity filter
+        sources: ['cisa'], // Filter by CISA KEV
+        dateRange: {
+          start: threeDaysAgo.toISOString().split('T')[0],
+          end: today.toISOString().split('T')[0]
+        },
+      })
+      // Navigate to global search
+      onViewChange('global-search')
+    }
+  }
+
+  const handleNewsClick = () => {
+    if (onViewChange) {
+      // Navigate to news page
+      onViewChange('news')
+    }
+  }
+
+  const handleDataSourceClick = (source: string) => {
+    if (onViewChange) {
+      switch (source) {
+        case 'cisa':
+          onViewChange('cisa-kev')
+          break
+        case 'jvn':
+          onViewChange('jvn')
+          break
+        case 'nvd':
+          onViewChange('nvd')
+          break
+        case 'redhat':
+          onViewChange('redhat')
+          break
+      }
+    }
+  }
+
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('ja-JP', {
       month: '2-digit',
@@ -111,34 +189,144 @@ export const Overview = () => {
   }
 
   const getTotalCritical = () => {
-    const nvdCritical = nvdData?.stats?.bySeverity?.critical || 0
-    const jvnCritical = jvnData?.stats?.bySeverity?.critical || 0
-    return nvdCritical + jvnCritical
+    let count = 0
+
+    // CISA KEV - all entries are CRITICAL (actively exploited)
+    if (cisaData) {
+      count += cisaData.length
+    }
+
+    // JVN Critical
+    if (jvnData?.data) {
+      count += jvnData.data.filter((item: any) =>
+        item.severity?.toUpperCase() === 'CRITICAL'
+      ).length
+    }
+
+    // NVD Critical
+    if (nvdData?.data) {
+      count += nvdData.data.filter((item: any) =>
+        item.severity?.toUpperCase() === 'CRITICAL'
+      ).length
+    }
+
+    // Red Hat CVEs - Critical only
+    if (redhatData?.cves) {
+      count += redhatData.cves.filter((cve: any) =>
+        cve.severity?.toUpperCase() === 'CRITICAL'
+      ).length
+    }
+
+    // Red Hat Advisories - Critical only
+    if (redhatData?.advisories) {
+      count += redhatData.advisories.filter((adv: any) =>
+        adv.severity?.toUpperCase() === 'CRITICAL' && adv.cves && adv.cves.length > 0
+      ).length
+    }
+
+    return count
   }
 
   const getTotalHigh = () => {
-    const nvdHigh = nvdData?.stats?.bySeverity?.high || 0
-    const jvnHigh = jvnData?.stats?.bySeverity?.high || 0
-    return nvdHigh + jvnHigh
+    let count = 0
+
+    // JVN High
+    if (jvnData?.data) {
+      count += jvnData.data.filter((item: any) =>
+        item.severity?.toUpperCase() === 'HIGH'
+      ).length
+    }
+
+    // NVD High
+    if (nvdData?.data) {
+      count += nvdData.data.filter((item: any) =>
+        item.severity?.toUpperCase() === 'HIGH'
+      ).length
+    }
+
+    // Red Hat CVEs - High and Important
+    if (redhatData?.cves) {
+      count += redhatData.cves.filter((cve: any) => {
+        const severity = cve.severity?.toUpperCase()
+        return severity === 'HIGH' || severity === 'IMPORTANT'
+      }).length
+    }
+
+    // Red Hat Advisories - High and Important
+    if (redhatData?.advisories) {
+      count += redhatData.advisories.filter((adv: any) => {
+        const severity = adv.severity?.toUpperCase()
+        return (severity === 'HIGH' || severity === 'IMPORTANT') && adv.cves && adv.cves.length > 0
+      }).length
+    }
+
+    return count
   }
 
   const getSeverityDistribution = () => {
-    const defaultStats = { critical: 0, high: 0, medium: 0, low: 0 }
-    const nvdStats = nvdData?.stats?.bySeverity ?? defaultStats
-    const jvnStats = jvnData?.stats?.bySeverity ?? defaultStats
+    let critical = 0
+    let high = 0
+    let medium = 0
+    let low = 0
 
-    return {
-      critical: (nvdStats.critical || 0) + (jvnStats.critical || 0),
-      high: (nvdStats.high || 0) + (jvnStats.high || 0),
-      medium: (nvdStats.medium || 0) + (jvnStats.medium || 0),
-      low: (nvdStats.low || 0) + (jvnStats.low || 0),
+    // CISA KEV - all entries are CRITICAL
+    if (cisaData) {
+      critical += cisaData.length
     }
+
+    // JVN
+    if (jvnData?.data) {
+      jvnData.data.forEach((item: any) => {
+        const sev = item.severity?.toUpperCase()
+        if (sev === 'CRITICAL') critical++
+        else if (sev === 'HIGH') high++
+        else if (sev === 'MEDIUM') medium++
+        else if (sev === 'LOW') low++
+      })
+    }
+
+    // NVD
+    if (nvdData?.data) {
+      nvdData.data.forEach((item: any) => {
+        const sev = item.severity?.toUpperCase()
+        if (sev === 'CRITICAL') critical++
+        else if (sev === 'HIGH') high++
+        else if (sev === 'MEDIUM') medium++
+        else if (sev === 'LOW') low++
+      })
+    }
+
+    // Red Hat CVEs
+    if (redhatData?.cves) {
+      redhatData.cves.forEach((cve: any) => {
+        const sev = cve.severity?.toUpperCase()
+        if (sev === 'CRITICAL') critical++
+        else if (sev === 'HIGH' || sev === 'IMPORTANT') high++
+        else if (sev === 'MEDIUM' || sev === 'MODERATE') medium++
+        else if (sev === 'LOW') low++
+      })
+    }
+
+    // Red Hat Advisories (only count those with CVEs)
+    if (redhatData?.advisories) {
+      redhatData.advisories.forEach((adv: any) => {
+        if (adv.cves && adv.cves.length > 0) {
+          const sev = adv.severity?.toUpperCase()
+          if (sev === 'CRITICAL') critical++
+          else if (sev === 'HIGH' || sev === 'IMPORTANT') high++
+          else if (sev === 'MEDIUM' || sev === 'MODERATE') medium++
+          else if (sev === 'LOW') low++
+        }
+      })
+    }
+
+    return { critical, high, medium, low }
   }
 
   const getAllVulnerabilities = () => {
     const cisa = cisaData?.filter(v => v.dateAdded).map((v) => ({
       dateAdded: v.dateAdded,
-      severity: 'CRITICAL', // CISA KEV are generally critical
+      severity: 'CRITICAL', // CISA KEV are actively exploited, treated as critical
     })) || []
 
     const jvn = jvnData?.data?.filter((v: any) => v.publishedDate).map((v: any) => ({
@@ -151,7 +339,19 @@ export const Overview = () => {
       severity: v.severity,
     })) || []
 
-    return [...cisa, ...jvn, ...nvd]
+    // Red Hat CVEs
+    const redhatCves = redhatData?.cves?.filter((v: any) => v.publicDate).map((v: any) => ({
+      dateAdded: v.publicDate,
+      severity: v.severity?.toUpperCase() === 'IMPORTANT' ? 'HIGH' : v.severity?.toUpperCase(),
+    })) || []
+
+    // Red Hat Advisories
+    const redhatAdvisories = redhatData?.advisories?.filter((v: any) => v.publicDate).map((v: any) => ({
+      dateAdded: v.publicDate,
+      severity: v.severity?.toUpperCase() === 'IMPORTANT' ? 'HIGH' : v.severity?.toUpperCase(),
+    })) || []
+
+    return [...cisa, ...jvn, ...nvd, ...redhatCves, ...redhatAdvisories]
   }
 
   const getTacticsData = () => {
@@ -173,9 +373,18 @@ export const Overview = () => {
             title="SOCダッシュボードについて"
             content={[
               'SOC（Security Operations Center）の統合ダッシュボードです。複数の脅威インテリジェンスソースから収集した情報を一元的に表示します。',
-              'CISA KEV（実際に悪用されている脆弱性）、NVD（包括的なCVEデータベース）、JVN（日本の脆弱性情報）、セキュリティニュースなど、重要な情報源を統合しています。',
+              'CISA KEV（実際に悪用されている脆弱性）、NVD（包括的なCVEデータベース）、JVN（日本の脆弱性情報）、Red Hat、セキュリティニュースなど、重要な情報源を統合しています。',
               '重要度別の脆弱性分布、時系列の脆弱性トレンド、MITRE ATT&CKの戦術別テクニック分布などを視覚化して、セキュリティ態勢を包括的に把握できます。',
-              '各統計カードをクリックすると、詳細ページに移動して、より詳しい情報を確認できます。'
+              '',
+              '【クリック可能な要素】',
+              '統計カード（上部）:',
+              '• Critical Threats → 全ソースのCRITICAL脆弱性を検索',
+              '• High Severity → 全ソースのHIGH脆弱性を検索',
+              '• CISA KEV (Active) → 過去3日間のCISA KEV脆弱性を検索',
+              '• News Updates → セキュリティニュースページへ移動',
+              '',
+              'データソース統計:',
+              '• 各データソース（CISA KEV、JVN、NVD、Red Hat）をクリックすると、該当ソースの詳細ページへ移動します'
             ]}
             size="md"
           />
@@ -187,62 +396,74 @@ export const Overview = () => {
 
       {/* Primary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg shadow-md p-6 border border-red-200">
+        <div
+          onClick={handleCriticalThreatsClick}
+          className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 rounded-lg shadow-md p-6 border border-red-200 dark:border-red-700 cursor-pointer hover:shadow-lg transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-red-900">Critical Threats</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">Critical Threats</p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-300 mt-2">
                 {getTotalCritical()}
               </p>
-              <p className="text-xs text-red-700 mt-1">CVSS 9.0+</p>
+              <p className="text-xs text-red-700 dark:text-red-200 mt-1">CISA KEV + CVSS 9.0+</p>
             </div>
-            <div className="bg-red-200 rounded-full p-3">
-              <AlertTriangle className="w-8 h-8 text-red-700" />
+            <div className="bg-red-200 dark:bg-red-700 rounded-full p-3">
+              <AlertTriangle className="w-8 h-8 text-red-700 dark:text-red-200" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg shadow-md p-6 border border-orange-200">
+        <div
+          onClick={handleHighSeverityClick}
+          className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800 rounded-lg shadow-md p-6 border border-orange-200 dark:border-orange-700 cursor-pointer hover:shadow-lg transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-900">High Severity</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">
+              <p className="text-sm font-medium text-orange-900 dark:text-orange-100">High Severity</p>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-300 mt-2">
                 {getTotalHigh()}
               </p>
-              <p className="text-xs text-orange-700 mt-1">CVSS 7.0-8.9</p>
+              <p className="text-xs text-orange-700 dark:text-orange-200 mt-1">CVSS 7.0-8.9</p>
             </div>
-            <div className="bg-orange-200 rounded-full p-3">
-              <AlertCircle className="w-8 h-8 text-orange-700" />
+            <div className="bg-orange-200 dark:bg-orange-700 rounded-full p-3">
+              <AlertCircle className="w-8 h-8 text-orange-700 dark:text-orange-200" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6 border border-blue-200">
+        <div
+          onClick={handleCisaKevClick}
+          className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg shadow-md p-6 border border-blue-200 dark:border-blue-700 cursor-pointer hover:shadow-lg transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-900">CISA KEV (Active)</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">CISA KEV (Active)</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-300 mt-2">
                 {getRecentCisaVulns().length}
               </p>
-              <p className="text-xs text-blue-700 mt-1">Last 3 days</p>
+              <p className="text-xs text-blue-700 dark:text-blue-200 mt-1">Last 3 days</p>
             </div>
-            <div className="bg-blue-200 rounded-full p-3">
-              <Shield className="w-8 h-8 text-blue-700" />
+            <div className="bg-blue-200 dark:bg-blue-700 rounded-full p-3">
+              <Shield className="w-8 h-8 text-blue-700 dark:text-blue-200" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-6 border border-green-200">
+        <div
+          onClick={handleNewsClick}
+          className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg shadow-md p-6 border border-green-200 dark:border-green-700 cursor-pointer hover:shadow-lg transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-900">News Updates</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">
+              <p className="text-sm font-medium text-green-900 dark:text-green-100">News Updates</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-300 mt-2">
                 {newsData?.length || 0}
               </p>
-              <p className="text-xs text-green-700 mt-1">Recent articles</p>
+              <p className="text-xs text-green-700 dark:text-green-200 mt-1">Recent articles</p>
             </div>
-            <div className="bg-green-200 rounded-full p-3">
-              <Newspaper className="w-8 h-8 text-green-700" />
+            <div className="bg-green-200 dark:bg-green-700 rounded-full p-3">
+              <Newspaper className="w-8 h-8 text-green-700 dark:text-green-200" />
             </div>
           </div>
         </div>
@@ -256,7 +477,10 @@ export const Overview = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* CISA KEV */}
-          <div className="border-l-4 border-blue-500 pl-4">
+          <div
+            onClick={() => handleDataSourceClick('cisa')}
+            className="border-l-4 border-blue-500 pl-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-r p-2 -ml-2"
+          >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-gray-900 dark:text-gray-100">CISA KEV</p>
               <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded">
@@ -270,7 +494,10 @@ export const Overview = () => {
           </div>
 
           {/* JVN */}
-          <div className="border-l-4 border-purple-500 pl-4">
+          <div
+            onClick={() => handleDataSourceClick('jvn')}
+            className="border-l-4 border-purple-500 pl-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-r p-2 -ml-2"
+          >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-gray-900 dark:text-gray-100">JVN</p>
               <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded">
@@ -286,7 +513,10 @@ export const Overview = () => {
           </div>
 
           {/* NVD */}
-          <div className="border-l-4 border-indigo-500 pl-4">
+          <div
+            onClick={() => handleDataSourceClick('nvd')}
+            className="border-l-4 border-indigo-500 pl-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-r p-2 -ml-2"
+          >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-gray-900 dark:text-gray-100">NVD</p>
               <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded">
@@ -302,7 +532,10 @@ export const Overview = () => {
           </div>
 
           {/* Red Hat */}
-          <div className="border-l-4 border-red-500 pl-4">
+          <div
+            onClick={() => handleDataSourceClick('redhat')}
+            className="border-l-4 border-red-500 pl-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-r p-2 -ml-2"
+          >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-gray-900 dark:text-gray-100">Red Hat</p>
               <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded">

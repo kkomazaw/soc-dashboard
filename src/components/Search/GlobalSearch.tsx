@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Search, Filter, X, Bookmark } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Search, Filter, X, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSearch } from '@/contexts/SearchContext'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCisaKev } from '@/services/api/cisaApi'
@@ -28,6 +28,8 @@ export const GlobalSearch = () => {
   const { filters, updateFilters } = useSearch()
   const [showFilters, setShowFilters] = useState(false)
   const [showPresets, setShowPresets] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
 
   // Fetch all data sources
   const { data: cisaData } = useQuery({
@@ -50,8 +52,16 @@ export const GlobalSearch = () => {
     queryFn: getAllRedHatData,
   })
 
+  const toggleSeverity = (severity: string) => {
+    const newSeverity = filters.severity.includes(severity)
+      ? filters.severity.filter((s) => s !== severity)
+      : [...filters.severity, severity]
+    updateFilters({ severity: newSeverity })
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
   // Combine and filter results
-  const searchResults = useMemo(() => {
+  const allSearchResults = useMemo(() => {
     const results: SearchResult[] = []
 
     // Add CISA KEV results
@@ -63,6 +73,10 @@ export const GlobalSearch = () => {
           item.vendorProject?.toLowerCase().includes(filters.query.toLowerCase()) ||
           item.product?.toLowerCase().includes(filters.query.toLowerCase())
 
+        // CISA KEV entries are all CRITICAL (actively exploited)
+        const matchesSeverity = filters.severity.length === 0 ||
+          filters.severity.includes('CRITICAL')
+
         const matchesVendor = filters.vendors.length === 0 ||
           filters.vendors.includes(item.vendorProject || '')
 
@@ -72,7 +86,7 @@ export const GlobalSearch = () => {
         const matchesDate = (!filters.dateRange.start || new Date(item.dateAdded) >= new Date(filters.dateRange.start)) &&
           (!filters.dateRange.end || new Date(item.dateAdded) <= new Date(filters.dateRange.end))
 
-        if (matchesQuery && matchesVendor && matchesProduct && matchesDate) {
+        if (matchesQuery && matchesSeverity && matchesVendor && matchesProduct && matchesDate) {
           results.push({
             id: item.cveId || `cisa-${item.id}`,
             title: item.vulnerabilityName || item.cveId,
@@ -159,7 +173,8 @@ export const GlobalSearch = () => {
           const normalizedSeverity = item.severity?.toUpperCase() || 'UNKNOWN'
           const matchesSeverity = filters.severity.length === 0 ||
             filters.severity.includes(normalizedSeverity) ||
-            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH'))
+            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH')) ||
+            (normalizedSeverity === 'MODERATE' && filters.severity.includes('MEDIUM'))
 
           const cvssScore = parseFloat(item.cvss3Score || item.cvssScore || '0')
           const matchesCvss = cvssScore >= filters.cvssRange.min &&
@@ -169,11 +184,19 @@ export const GlobalSearch = () => {
             (!filters.dateRange.end || new Date(item.publicDate) <= new Date(filters.dateRange.end))
 
           if (matchesQuery && matchesSeverity && matchesCvss && matchesDate) {
+            // Map Red Hat severity to standard levels for display consistency
+            let displaySeverity = normalizedSeverity
+            if (normalizedSeverity === 'IMPORTANT') {
+              displaySeverity = 'HIGH'
+            } else if (normalizedSeverity === 'MODERATE') {
+              displaySeverity = 'MEDIUM'
+            }
+
             results.push({
               id: item.cveId || `redhat-cve-${item.id || index}`,
               title: item.cveId || 'Unknown CVE',
               description: item.bugzillaDesc || item.details?.join(', ') || '',
-              severity: normalizedSeverity,
+              severity: displaySeverity,
               source: 'redhat',
               publishedDate: item.publicDate,
               cveId: item.cveId,
@@ -199,17 +222,26 @@ export const GlobalSearch = () => {
           const normalizedSeverity = item.severity?.toUpperCase() || 'UNKNOWN'
           const matchesSeverity = filters.severity.length === 0 ||
             filters.severity.includes(normalizedSeverity) ||
-            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH'))
+            (normalizedSeverity === 'IMPORTANT' && filters.severity.includes('HIGH')) ||
+            (normalizedSeverity === 'MODERATE' && filters.severity.includes('MEDIUM'))
 
           const matchesDate = (!filters.dateRange.start || new Date(item.publicDate) >= new Date(filters.dateRange.start)) &&
             (!filters.dateRange.end || new Date(item.publicDate) <= new Date(filters.dateRange.end))
 
           if (matchesQuery && matchesSeverity && matchesDate) {
+            // Map Red Hat severity to standard levels for display consistency
+            let displaySeverity = normalizedSeverity
+            if (normalizedSeverity === 'IMPORTANT') {
+              displaySeverity = 'HIGH'
+            } else if (normalizedSeverity === 'MODERATE') {
+              displaySeverity = 'MEDIUM'
+            }
+
             results.push({
               id: item.advisoryId || `redhat-advisory-${item.id || index}`,
               title: `${item.advisoryId}: ${item.synopsis}`,
               description: item.description || item.synopsis || '',
-              severity: normalizedSeverity,
+              severity: displaySeverity,
               source: 'redhat',
               publishedDate: item.publicDate,
               cveId: item.cves[0], // First CVE as primary
@@ -221,8 +253,21 @@ export const GlobalSearch = () => {
       }
     }
 
-    return results.slice(0, 100) // Limit to 100 results
+    return results
   }, [cisaData, jvnData, nvdData, redhatData, filters])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(allSearchResults.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const searchResults = allSearchResults.slice(startIndex, endIndex)
+
+  // Effect to reset page when results change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [allSearchResults.length, currentPage, totalPages])
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toUpperCase()) {
@@ -287,13 +332,19 @@ export const GlobalSearch = () => {
             <input
               type="text"
               value={filters.query}
-              onChange={(e) => updateFilters({ query: e.target.value })}
+              onChange={(e) => {
+                updateFilters({ query: e.target.value })
+                setCurrentPage(1)
+              }}
               placeholder="脆弱性、CVE ID、ベンダー、製品を検索..."
               className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 placeholder-gray-400 dark:placeholder-gray-500"
             />
             {filters.query && (
               <button
-                onClick={() => updateFilters({ query: '' })}
+                onClick={() => {
+                  updateFilters({ query: '' })
+                  setCurrentPage(1)
+                }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
@@ -325,6 +376,51 @@ export const GlobalSearch = () => {
             プリセット
           </button>
         </div>
+
+        {/* Quick Severity Filters */}
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-gray-600 dark:text-gray-400">重要度:</span>
+            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((severity) => {
+              const isActive = filters.severity.includes(severity)
+              const colorClasses = {
+                CRITICAL: isActive
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800',
+                HIGH: isActive
+                  ? 'bg-orange-600 text-white hover:bg-orange-700'
+                  : 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-800',
+                MEDIUM: isActive
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                  : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800',
+                LOW: isActive
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800',
+              }[severity]
+
+              return (
+                <button
+                  key={severity}
+                  onClick={() => toggleSeverity(severity)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${colorClasses}`}
+                >
+                  {severity}
+                </button>
+              )
+            })}
+            {filters.severity.length > 0 && (
+              <button
+                onClick={() => {
+                  updateFilters({ severity: [] })
+                  setCurrentPage(1)
+                }}
+                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
+              >
+                クリア
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Advanced Filters Panel */}
@@ -344,13 +440,22 @@ export const GlobalSearch = () => {
       {/* Results */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            検索結果
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({searchResults.length} {searchResults.length === 100 ? '+ ' : ''}件)
-            </span>
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              検索結果
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                {allSearchResults.length > 0
+                  ? `(${allSearchResults.length}件中 ${startIndex + 1}-${Math.min(endIndex, allSearchResults.length)}件を表示)`
+                  : '(0件)'}
+              </span>
+            </h3>
+            {totalPages > 1 && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                ページ {currentPage} / {totalPages}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="max-h-[600px] overflow-y-auto">
@@ -397,6 +502,74 @@ export const GlobalSearch = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && allSearchResults.length > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {allSearchResults.length}件中 {startIndex + 1}-{Math.min(endIndex, allSearchResults.length)}件を表示
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  最初
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm rounded transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  最後
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
