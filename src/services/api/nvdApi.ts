@@ -45,6 +45,7 @@ export interface NvdRecentResponse {
   data: NvdCve[]
   count: number
   days: number
+  stats: NvdStats
   timestamp: string
 }
 

@@ -23,9 +23,11 @@ export const NvdList = () => {
   const [apiSearchResult, setApiSearchResult] = useState<any>(null)
   const [isSearching, setIsSearching] = useState(false)
 
+  // Use recent endpoint instead of fetching all CVEs (125MB)
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['nvd-cves'],
-    queryFn: getNvdCves,
+    queryKey: ['nvd-recent-cves', 90], // Last 90 days
+    queryFn: () => getRecentNvdCves(90),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   })
 
   const { data: statusData } = useQuery({
@@ -207,7 +209,7 @@ export const NvdList = () => {
           </div>
         </div>
         <p className="text-gray-600 dark:text-gray-400">
-          National Vulnerability Database - NIST's comprehensive CVE database
+          National Vulnerability Database - Showing CVEs from the last 90 days
         </p>
       </div>
 

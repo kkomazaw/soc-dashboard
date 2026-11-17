@@ -81,11 +81,15 @@ export const getRecentNvd = async (req: Request, res: Response) => {
       } : null,
     }))
 
+    // Get overall stats for display
+    const stats = await getNvdStats()
+
     res.json({
       success: true,
       data: enrichedCves,
       count: cves.length,
       days,
+      stats,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
