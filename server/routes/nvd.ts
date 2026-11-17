@@ -4,6 +4,7 @@ import {
   getRecentNvd,
   searchCve,
   refreshNvdData,
+  refreshNvdHistoricalData,
   getNvdApiStatus,
 } from '../controllers/nvdController'
 
@@ -14,5 +15,6 @@ router.get('/recent', getRecentNvd)
 router.get('/status', getNvdApiStatus)
 router.get('/search/:cveId', searchCve)
 router.post('/refresh', refreshNvdData)
+router.post('/refresh-historical', refreshNvdHistoricalData)
 
 export default router

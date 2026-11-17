@@ -16,6 +16,7 @@ import {
   getEpssScoreByCveId,
 } from '../services/database/epssDb'
 import { interpretEpssScore } from '../services/fetchers/epssFetcher'
+import { syncNvdData } from '../services/dataSync'
 
 export const getNvdCves = async (req: Request, res: Response) => {
   try {
@@ -180,7 +181,7 @@ export const searchCve = async (req: Request, res: Response) => {
 
 export const refreshNvdData = async (req: Request, res: Response) => {
   try {
-    const days = parseInt(req.query.days as string) || 7
+    const days = parseInt(req.query.days as string) || 30
     console.log(`Manual NVD data refresh requested (last ${days} days)...`)
 
     // Note: NVD API works without key, just with lower rate limits
@@ -189,11 +190,8 @@ export const refreshNvdData = async (req: Request, res: Response) => {
       console.warn('NVD API key not configured - using public API with rate limits')
     }
 
-    const cves = await fetchRecentNvdCves(days)
-
-    if (cves.length > 0) {
-      await saveNvdCves(cves)
-    }
+    // Use syncNvdData to maintain initial sync tracking
+    await syncNvdData(days)
 
     const stats = await getNvdStats()
 
@@ -202,7 +200,6 @@ export const refreshNvdData = async (req: Request, res: Response) => {
       message: apiConfigured
         ? 'NVD data refreshed successfully'
         : 'NVD data refreshed successfully (using public API)',
-      count: cves.length,
       stats,
       apiConfigured,
       timestamp: new Date().toISOString(),
@@ -212,6 +209,43 @@ export const refreshNvdData = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to refresh NVD data',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+}
+
+export const refreshNvdHistoricalData = async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 365
+    console.log(`Manual NVD historical data refresh requested (last ${days} days)...`)
+
+    // Note: NVD API works without key, just with lower rate limits
+    const apiConfigured = isNvdConfigured()
+    if (!apiConfigured) {
+      console.warn('NVD API key not configured - using public API with slower rate limits')
+      console.warn(`Fetching ${days} days of data may take several minutes...`)
+    } else {
+      console.log(`Fetching ${days} days of historical data with API key...`)
+    }
+
+    // Force historical sync
+    await syncNvdData(days, true)
+
+    const stats = await getNvdStats()
+
+    res.json({
+      success: true,
+      message: `NVD historical data refreshed successfully (${days} days)`,
+      stats,
+      apiConfigured,
+      daysRequested: days,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Error refreshing NVD historical data:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to refresh NVD historical data',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }

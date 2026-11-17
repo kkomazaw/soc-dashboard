@@ -18,6 +18,11 @@ import {
   calculateGeoThreatAggregations,
   getGeoThreatStats,
 } from './database/geoThreatDb'
+import {
+  hasCompletedInitialSync,
+  markInitialSyncCompleted,
+  updateLastSyncTimestamp,
+} from './database/appSettingDb'
 import { prisma } from './database/prismaClient'
 
 /**
@@ -72,14 +77,38 @@ export const syncJvnData = async (): Promise<void> => {
 
 /**
  * Sync NVD CVE data from API to database
+ * On initial sync, fetches 365 days of historical data
+ * On subsequent syncs, fetches only recent 30 days
  */
-export const syncNvdData = async (daysBack: number = 30): Promise<void> => {
+export const syncNvdData = async (daysBack?: number, forceHistorical: boolean = false): Promise<void> => {
   try {
-    console.log(`⏳ Starting NVD CVE sync (last ${daysBack} days)...`)
-    const cves = await fetchRecentNvdCves(daysBack, 2000) // Increased from 100 to 2000 (NVD max)
+    const isInitialSync = forceHistorical || !(await hasCompletedInitialSync('nvd'))
+
+    // Determine how many days to fetch
+    let actualDaysBack: number
+    if (daysBack !== undefined) {
+      actualDaysBack = daysBack
+    } else if (isInitialSync) {
+      actualDaysBack = 365 // 1 year of historical data for initial sync
+    } else {
+      actualDaysBack = 30 // Regular incremental sync
+    }
+
+    console.log(`⏳ Starting NVD CVE sync (${isInitialSync ? 'INITIAL' : 'incremental'} - last ${actualDaysBack} days)...`)
+
+    const cves = await fetchRecentNvdCves(actualDaysBack, 2000) // NVD max per request
+
     if (cves.length > 0) {
       await saveNvdCves(cves)
     }
+
+    // Mark initial sync as completed on first successful sync
+    if (isInitialSync && !forceHistorical) {
+      await markInitialSyncCompleted('nvd')
+    }
+
+    await updateLastSyncTimestamp('nvd')
+
     const stats = await getNvdStats()
     console.log(`✅ NVD sync complete: ${stats.total} total, ${stats.recent24h} in last 24h`)
   } catch (error) {
