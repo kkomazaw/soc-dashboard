@@ -133,6 +133,36 @@ export const CisaKevAnalytics = () => {
       { status: '30日超', count: dueDateStats.moreThan30days, color: '#10b981' },
     ]
 
+    // 7. Yearly trend (since 2021 - CISA KEV inception)
+    const currentYear = now.getFullYear()
+    const yearlyData: Record<string, { ransomware: number; noRansomware: number }> = {}
+
+    // Initialize years from 2021 to current year
+    for (let year = 2021; year <= currentYear; year++) {
+      yearlyData[year.toString()] = { ransomware: 0, noRansomware: 0 }
+    }
+
+    // Count vulnerabilities by year and ransomware usage
+    vulnerabilities.forEach(item => {
+      const year = new Date(item.dateAdded).getFullYear().toString()
+      if (yearlyData[year]) {
+        if (item.knownRansomwareCampaignUse) {
+          yearlyData[year].ransomware++
+        } else {
+          yearlyData[year].noRansomware++
+        }
+      }
+    })
+
+    const yearlyTrendData = Object.entries(yearlyData)
+      .map(([year, counts]) => ({
+        year,
+        ランサムウェア悪用: counts.ransomware,
+        その他: counts.noRansomware,
+        total: counts.ransomware + counts.noRansomware,
+      }))
+      .sort((a, b) => a.year.localeCompare(b.year))
+
     return {
       topVendors,
       topProducts,
@@ -140,6 +170,7 @@ export const CisaKevAnalytics = () => {
       trendData,
       ageData,
       dueDateData,
+      yearlyTrendData,
       totalCount: vulnerabilities.length,
       ransomwareCount: ransomwareStats.known,
     }
@@ -243,6 +274,42 @@ export const CisaKevAnalytics = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Yearly Trend (Full Width) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2" />
+            年次KEV発行数推移（2021年〜）- ランサムウェア悪用別
+          </h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={analytics.yearlyTrendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="year" stroke="#9ca3af" />
+              <YAxis stroke="#9ca3af" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1f2937',
+                  border: '1px solid #374151',
+                  borderRadius: '0.5rem',
+                }}
+                cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+              />
+              <Legend />
+              <Bar dataKey="ランサムウェア悪用" stackId="a" fill="#ef4444" />
+              <Bar dataKey="その他" stackId="a" fill="#6b7280" />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="mt-4 flex items-center justify-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span className="text-gray-600 dark:text-gray-400">ランサムウェア悪用確認済み</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-500 rounded"></div>
+              <span className="text-gray-600 dark:text-gray-400">その他</span>
+            </div>
+          </div>
+        </div>
+
         {/* Monthly Trend */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
@@ -309,7 +376,14 @@ export const CisaKevAnalytics = () => {
             <BarChart data={analytics.topVendors} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis type="number" stroke="#9ca3af" />
-              <YAxis dataKey="vendor" type="category" width={100} stroke="#9ca3af" />
+              <YAxis
+                dataKey="vendor"
+                type="category"
+                width={150}
+                stroke="#9ca3af"
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#1f2937',
@@ -332,7 +406,14 @@ export const CisaKevAnalytics = () => {
             <BarChart data={analytics.topProducts} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis type="number" stroke="#9ca3af" />
-              <YAxis dataKey="product" type="category" width={120} stroke="#9ca3af" />
+              <YAxis
+                dataKey="product"
+                type="category"
+                width={150}
+                stroke="#9ca3af"
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#1f2937',
