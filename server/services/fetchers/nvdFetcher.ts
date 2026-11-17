@@ -66,13 +66,15 @@ interface NvdApiResponse {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
- * Fetch recent CVEs from NVD API
+ * Fetch recent CVEs from NVD API with pagination support
  * @param daysBack Number of days to look back (default: 7)
- * @param maxResults Maximum number of results to fetch (default: 100)
+ * @param maxResults Maximum number of results to fetch per request (default: 2000, max: 2000)
+ * @param fetchAll If true, fetches all available CVEs in the date range (default: true)
  */
 export const fetchRecentNvdCves = async (
   daysBack: number = 7,
-  maxResults: number = 100
+  maxResults: number = 2000,
+  fetchAll: boolean = true
 ): Promise<NvdCveItem[]> => {
   try {
     const endDate = new Date()
@@ -92,28 +94,65 @@ export const fetchRecentNvdCves = async (
       headers['apiKey'] = NVD_API_KEY
     }
 
-    const params = {
-      pubStartDate,
-      pubEndDate,
-      resultsPerPage: Math.min(maxResults, 2000), // NVD max is 2000
-      startIndex: 0,
-    }
+    const resultsPerPage = Math.min(maxResults, 2000) // NVD max is 2000
+    let allCves: NvdCveItem[] = []
+    let startIndex = 0
+    let totalResults = 0
 
-    const response = await axios.get<NvdApiResponse>(NVD_API_URL, {
+    // First request to get total count
+    const firstResponse = await axios.get<NvdApiResponse>(NVD_API_URL, {
       headers,
-      params,
+      params: {
+        pubStartDate,
+        pubEndDate,
+        resultsPerPage,
+        startIndex: 0,
+      },
       timeout: 30000,
     })
 
-    if (!response.data.vulnerabilities) {
+    if (!firstResponse.data.vulnerabilities) {
       console.warn('No vulnerabilities found in NVD response')
       return []
     }
 
-    const cves = response.data.vulnerabilities.map(v => v.cve)
-    console.log(`Successfully fetched ${cves.length} CVEs from NVD (total available: ${response.data.totalResults})`)
+    totalResults = firstResponse.data.totalResults
+    allCves = firstResponse.data.vulnerabilities.map(v => v.cve)
+    console.log(`Fetched ${allCves.length}/${totalResults} CVEs from NVD...`)
 
-    return cves
+    // If not fetching all or already got everything, return
+    if (!fetchAll || allCves.length >= totalResults) {
+      console.log(`Successfully fetched ${allCves.length} CVEs from NVD (total available: ${totalResults})`)
+      return allCves
+    }
+
+    // Paginate through remaining results
+    startIndex = resultsPerPage
+    while (startIndex < totalResults) {
+      await sleep(RATE_LIMIT_DELAY) // Rate limiting
+
+      const response = await axios.get<NvdApiResponse>(NVD_API_URL, {
+        headers,
+        params: {
+          pubStartDate,
+          pubEndDate,
+          resultsPerPage,
+          startIndex,
+        },
+        timeout: 30000,
+      })
+
+      if (response.data.vulnerabilities && response.data.vulnerabilities.length > 0) {
+        const batch = response.data.vulnerabilities.map(v => v.cve)
+        allCves.push(...batch)
+        console.log(`Fetched ${allCves.length}/${totalResults} CVEs from NVD...`)
+      }
+
+      startIndex += resultsPerPage
+    }
+
+    console.log(`✅ Successfully fetched ${allCves.length} CVEs from NVD (total available: ${totalResults})`)
+    return allCves
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 403) {

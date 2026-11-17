@@ -96,7 +96,7 @@ export const syncNvdData = async (daysBack?: number, forceHistorical: boolean = 
 
     console.log(`⏳ Starting NVD CVE sync (${isInitialSync ? 'INITIAL' : 'incremental'} - last ${actualDaysBack} days)...`)
 
-    const cves = await fetchRecentNvdCves(actualDaysBack, 2000) // NVD max per request
+    const cves = await fetchRecentNvdCves(actualDaysBack, 2000, true) // Fetch all CVEs in date range
 
     if (cves.length > 0) {
       await saveNvdCves(cves)
