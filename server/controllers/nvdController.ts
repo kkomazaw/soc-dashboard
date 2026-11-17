@@ -274,3 +274,183 @@ export const getNvdApiStatus = async (req: Request, res: Response) => {
     })
   }
 }
+
+export const getNvdAnalytics = async (req: Request, res: Response) => {
+  try {
+    console.log('Calculating NVD analytics...')
+    const cves = await getAllNvdCves()
+    console.log(`Processing ${cves.length} CVEs for analytics`)
+
+    const now = new Date()
+
+    // 1. Severity distribution
+    const severityCounts: Record<string, number> = {
+      CRITICAL: 0,
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      NONE: 0,
+    }
+
+    cves.forEach(cve => {
+      const severity = (cve.cvssSeverity?.toUpperCase() || 'NONE')
+      if (severityCounts[severity] !== undefined) {
+        severityCounts[severity]++
+      } else {
+        severityCounts.NONE++
+      }
+    })
+
+    const severityData = Object.entries(severityCounts)
+      .filter(([, count]) => count > 0)
+      .map(([severity, count]) => ({ severity, count }))
+
+    // 2. CVSS score distribution
+    const scoreDistribution: Record<string, number> = {
+      '0.0-3.9': 0,
+      '4.0-6.9': 0,
+      '7.0-8.9': 0,
+      '9.0-10.0': 0,
+      '未採点': 0,
+    }
+
+    cves.forEach(cve => {
+      if (!cve.cvssScore) {
+        scoreDistribution['未採点']++
+      } else if (cve.cvssScore < 4.0) {
+        scoreDistribution['0.0-3.9']++
+      } else if (cve.cvssScore < 7.0) {
+        scoreDistribution['4.0-6.9']++
+      } else if (cve.cvssScore < 9.0) {
+        scoreDistribution['7.0-8.9']++
+      } else {
+        scoreDistribution['9.0-10.0']++
+      }
+    })
+
+    const scoreData = Object.entries(scoreDistribution).map(([range, count]) => ({
+      range,
+      count,
+    }))
+
+    // 3. Monthly trend (last 12 months)
+    const monthlyData: Record<string, number> = {}
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      monthlyData[key] = 0
+    }
+
+    cves.forEach(cve => {
+      const date = new Date(cve.published)
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      if (monthlyData[key] !== undefined) {
+        monthlyData[key]++
+      }
+    })
+
+    const trendData = Object.entries(monthlyData).map(([month, count]) => ({
+      month,
+      count,
+    }))
+
+    // 4. Age distribution
+    const ageDistribution: Record<string, number> = {
+      '0-7日': 0,
+      '8-30日': 0,
+      '31-90日': 0,
+      '91-180日': 0,
+      '180日超': 0,
+    }
+
+    cves.forEach(cve => {
+      const daysSincePublished = Math.floor((now.getTime() - new Date(cve.published).getTime()) / (1000 * 60 * 60 * 24))
+
+      if (daysSincePublished <= 7) {
+        ageDistribution['0-7日']++
+      } else if (daysSincePublished <= 30) {
+        ageDistribution['8-30日']++
+      } else if (daysSincePublished <= 90) {
+        ageDistribution['31-90日']++
+      } else if (daysSincePublished <= 180) {
+        ageDistribution['91-180日']++
+      } else {
+        ageDistribution['180日超']++
+      }
+    })
+
+    const ageData = Object.entries(ageDistribution).map(([age, count]) => ({
+      age,
+      count,
+    }))
+
+    // 5. Vulnerability status distribution
+    const statusCounts: Record<string, number> = {}
+
+    cves.forEach(cve => {
+      const status = cve.vulnStatus || 'Unknown'
+      statusCounts[status] = (statusCounts[status] || 0) + 1
+    })
+
+    const statusData = Object.entries(statusCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([status, count]) => ({ status, count }))
+
+    // 6. CVSS version distribution
+    const versionCounts: Record<string, number> = {
+      'v3.1': 0,
+      'v2.0': 0,
+      '未採点': 0,
+    }
+
+    cves.forEach(cve => {
+      if (!cve.cvssVersion) {
+        versionCounts['未採点']++
+      } else if (cve.cvssVersion === 'v3.1') {
+        versionCounts['v3.1']++
+      } else if (cve.cvssVersion === 'v2.0') {
+        versionCounts['v2.0']++
+      }
+    })
+
+    const versionData = Object.entries(versionCounts)
+      .filter(([, count]) => count > 0)
+      .map(([version, count]) => ({ version, count }))
+
+    // Calculate statistics
+    const cvssScores = cves.filter(c => c.cvssScore).map(c => c.cvssScore!)
+    const avgCvssScore = cvssScores.length > 0
+      ? cvssScores.reduce((a, b) => a + b, 0) / cvssScores.length
+      : 0
+
+    const criticalHighCount = severityCounts.CRITICAL + severityCounts.HIGH
+
+    console.log('Analytics calculation complete')
+
+    res.json({
+      success: true,
+      analytics: {
+        severityData,
+        scoreData,
+        trendData,
+        ageData,
+        statusData,
+        versionData,
+        totalCount: cves.length,
+        criticalHighCount,
+        avgCvssScore,
+        currentMonthCount: trendData[trendData.length - 1]?.count || 0,
+        currentMonth: trendData[trendData.length - 1]?.month || '',
+      },
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Error calculating NVD analytics:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate NVD analytics',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+}

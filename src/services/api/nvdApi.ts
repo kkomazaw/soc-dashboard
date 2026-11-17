@@ -56,8 +56,33 @@ export interface NvdStatusResponse {
   timestamp: string
 }
 
+export interface NvdAnalytics {
+  severityData: Array<{ severity: string; count: number }>
+  scoreData: Array<{ range: string; count: number }>
+  trendData: Array<{ month: string; count: number }>
+  ageData: Array<{ age: string; count: number }>
+  statusData: Array<{ status: string; count: number }>
+  versionData: Array<{ version: string; count: number }>
+  totalCount: number
+  criticalHighCount: number
+  avgCvssScore: number
+  currentMonthCount: number
+  currentMonth: string
+}
+
+export interface NvdAnalyticsResponse {
+  success: boolean
+  analytics: NvdAnalytics
+  timestamp: string
+}
+
 export const getNvdCves = async (): Promise<NvdResponse> => {
   const response = await axios.get<NvdResponse>(`${API_BASE_URL}/api/nvd`)
+  return response.data
+}
+
+export const getNvdAnalytics = async (): Promise<NvdAnalyticsResponse> => {
+  const response = await axios.get<NvdAnalyticsResponse>(`${API_BASE_URL}/api/nvd/analytics`)
   return response.data
 }
 
