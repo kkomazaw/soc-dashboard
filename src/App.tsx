@@ -10,6 +10,7 @@ import { useNotificationMonitor } from './hooks/useNotificationMonitor'
 
 // Lazy load components for better performance
 const Overview = lazy(() => import('./components/Dashboard/Overview').then(m => ({ default: m.Overview })))
+const VulnerabilitySourcesList = lazy(() => import('./components/Vulnerabilities/VulnerabilitySourcesList').then(m => ({ default: m.VulnerabilitySourcesList })))
 const CisaKevList = lazy(() => import('./components/Vulnerabilities/CisaKevList').then(m => ({ default: m.CisaKevList })))
 const JvnList = lazy(() => import('./components/Vulnerabilities/JvnList').then(m => ({ default: m.JvnList })))
 const NvdList = lazy(() => import('./components/Vulnerabilities/NvdList').then(m => ({ default: m.NvdList })))
@@ -19,6 +20,7 @@ const IocSearch = lazy(() => import('./components/ThreatIntel/IocSearch'))
 const AttackMatrix = lazy(() => import('./components/ThreatIntel/AttackMatrix').then(m => ({ default: m.AttackMatrix })))
 const VulnerabilityTrends = lazy(() => import('./components/Analytics/VulnerabilityTrends').then(m => ({ default: m.VulnerabilityTrends })))
 const EnhancedDashboard = lazy(() => import('./components/Analytics/EnhancedDashboard').then(m => ({ default: m.EnhancedDashboard })))
+const AnalyticsList = lazy(() => import('./components/Analytics/AnalyticsList').then(m => ({ default: m.AnalyticsList })))
 const GlobalSearch = lazy(() => import('./components/Search/GlobalSearch').then(m => ({ default: m.GlobalSearch })))
 const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').then(m => ({ default: m.CVETimeline })))
 const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalytics').then(m => ({ default: m.CisaKevAnalytics })))
@@ -52,8 +54,11 @@ function AppContent() {
       case 'overview':
         return <Overview onViewChange={setCurrentView} />
       case 'vulnerabilities':
+        return <VulnerabilitySourcesList onViewChange={setCurrentView} />
       case 'cisa-kev':
         return <CisaKevList />
+      case 'analytics':
+        return <AnalyticsList onViewChange={setCurrentView} />
       case 'cisa-kev-analytics':
         return <CisaKevAnalytics />
       case 'jvn':

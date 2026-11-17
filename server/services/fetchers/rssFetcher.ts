@@ -33,6 +33,11 @@ export const RSS_FEEDS: RssFeedConfig[] = [
     url: 'https://feeds.feedburner.com/TheHackersNews',
     source: 'thehackernews',
   },
+  {
+    name: 'セキュリティ対策Lab',
+    url: 'https://rocket-boys.co.jp/feed/',
+    source: 'security-measures-lab',
+  },
 ]
 
 export const fetchRssFeed = async (
