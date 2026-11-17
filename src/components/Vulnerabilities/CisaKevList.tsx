@@ -1,9 +1,9 @@
 import { useCisaKev } from '@/hooks/useVulnerabilities'
 import type { CisaKevItem } from '@/types/vulnerability'
-import { AlertCircle, Calendar, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
+import { AlertCircle, Calendar, Clock, ExternalLink, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react'
 import { ExportButton } from '../common/ExportButton'
 import { exportCisaKev } from '@/services/api/exportApi'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { HelpTooltip } from '../common/HelpTooltip'
 
 const ITEMS_PER_PAGE = 50
@@ -11,6 +11,85 @@ const ITEMS_PER_PAGE = 50
 export const CisaKevList = () => {
   const { data: vulnerabilities, isLoading, error } = useCisaKev()
   const [currentPage, setCurrentPage] = useState(1)
+
+  // Filter states
+  const [selectedYear, setSelectedYear] = useState<string>('all')
+  const [selectedVendor, setSelectedVendor] = useState<string>('all')
+  const [selectedProduct, setSelectedProduct] = useState<string>('all')
+  const [ransomwareFilter, setRansomwareFilter] = useState<string>('all') // 'all' | 'yes' | 'no'
+
+  // Extract filter options from data
+  const filterOptions = useMemo(() => {
+    if (!vulnerabilities) {
+      return {
+        years: [],
+        vendors: [],
+        products: [],
+      }
+    }
+
+    const years = Array.from(
+      new Set(
+        vulnerabilities.map((v) => new Date(v.dateAdded).getFullYear().toString())
+      )
+    ).sort((a, b) => Number(b) - Number(a))
+
+    const vendors = Array.from(
+      new Set(vulnerabilities.map((v) => v.vendorProject || 'Unknown'))
+    ).sort()
+
+    const products = Array.from(
+      new Set(vulnerabilities.map((v) => v.product || 'Unknown'))
+    ).sort()
+
+    return { years, vendors, products }
+  }, [vulnerabilities])
+
+  // Apply filters
+  const filteredVulnerabilities = useMemo(() => {
+    if (!vulnerabilities) return []
+
+    return vulnerabilities.filter((item) => {
+      // Year filter
+      if (selectedYear !== 'all') {
+        const itemYear = new Date(item.dateAdded).getFullYear().toString()
+        if (itemYear !== selectedYear) return false
+      }
+
+      // Vendor filter
+      if (selectedVendor !== 'all') {
+        if ((item.vendorProject || 'Unknown') !== selectedVendor) return false
+      }
+
+      // Product filter
+      if (selectedProduct !== 'all') {
+        if ((item.product || 'Unknown') !== selectedProduct) return false
+      }
+
+      // Ransomware filter
+      if (ransomwareFilter === 'yes') {
+        if (!item.knownRansomwareCampaignUse) return false
+      } else if (ransomwareFilter === 'no') {
+        if (item.knownRansomwareCampaignUse) return false
+      }
+
+      return true
+    })
+  }, [vulnerabilities, selectedYear, selectedVendor, selectedProduct, ransomwareFilter])
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1)
+  }, [selectedYear, selectedVendor, selectedProduct, ransomwareFilter])
+
+  const clearFilters = () => {
+    setSelectedYear('all')
+    setSelectedVendor('all')
+    setSelectedProduct('all')
+    setRansomwareFilter('all')
+  }
+
+  const hasActiveFilters = selectedYear !== 'all' || selectedVendor !== 'all' || selectedProduct !== 'all' || ransomwareFilter !== 'all'
 
   const handleExport = async (format: 'csv' | 'pdf') => {
     await exportCisaKev(format)
@@ -50,14 +129,14 @@ export const CisaKevList = () => {
     )
   }
 
-  const recentItems = getRecentItems(vulnerabilities)
+  const recentItems = getRecentItems(filteredVulnerabilities)
 
-  // Pagination logic
-  const totalItems = vulnerabilities?.length || 0
+  // Pagination logic (using filtered data)
+  const totalItems = filteredVulnerabilities?.length || 0
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const displayItems = vulnerabilities?.slice(startIndex, endIndex) || []
+  const displayItems = filteredVulnerabilities?.slice(startIndex, endIndex) || []
 
   const goToPage = (page: number) => {
     setCurrentPage(page)
@@ -102,6 +181,110 @@ export const CisaKevList = () => {
             </div>
             <ExportButton onExport={handleExport} label="Export" />
           </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="mb-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+              <Filter className="w-4 h-4 mr-2" />
+              フィルタ
+            </h3>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
+              >
+                <X className="w-4 h-4" />
+                クリア
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Year Filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                発行年
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">すべて</option>
+                {filterOptions.years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}年
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Vendor Filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                ベンダー
+              </label>
+              <select
+                value={selectedVendor}
+                onChange={(e) => setSelectedVendor(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">すべて</option>
+                {filterOptions.vendors.map((vendor) => (
+                  <option key={vendor} value={vendor}>
+                    {vendor}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Product Filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                製品
+              </label>
+              <select
+                value={selectedProduct}
+                onChange={(e) => setSelectedProduct(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">すべて</option>
+                {filterOptions.products.map((product) => (
+                  <option key={product} value={product}>
+                    {product}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Ransomware Filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                ランサムウェア悪用
+              </label>
+              <select
+                value={ransomwareFilter}
+                onChange={(e) => setRansomwareFilter(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">すべて</option>
+                <option value="yes">確認済み</option>
+                <option value="no">未確認</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Filter Results Info */}
+          {hasActiveFilters && (
+            <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+              フィルタ結果: {totalItems}件
+              {vulnerabilities && (
+                <span className="ml-2">（全{vulnerabilities.length}件中）</span>
+              )}
+            </div>
+          )}
         </div>
 
         {recentItems.length > 0 && (
@@ -165,6 +348,9 @@ export const CisaKevList = () => {
                   脆弱性
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  ランサムウェア
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   追加日
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -192,6 +378,17 @@ export const CisaKevList = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-md">
                     {item.vulnerabilityName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {item.knownRansomwareCampaignUse ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                        確認済み
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                        未確認
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center">

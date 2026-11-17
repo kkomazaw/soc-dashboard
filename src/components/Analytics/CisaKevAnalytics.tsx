@@ -2,20 +2,32 @@ import { useCisaKev } from '@/hooks/useVulnerabilities'
 import type { CisaKevItem } from '@/types/vulnerability'
 import { Shield, TrendingUp, Calendar, AlertTriangle, Package, Clock } from 'lucide-react'
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#f97316']
 
 export const CisaKevAnalytics = () => {
   const { data: vulnerabilities, isLoading, error } = useCisaKev()
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
 
   const analytics = useMemo(() => {
     if (!vulnerabilities || vulnerabilities.length === 0) {
       return null
     }
 
-    // 1. Top 10 Vendors
-    const vendorCounts = vulnerabilities.reduce((acc, item) => {
+    // Extract available years from data
+    const availableYears = Array.from(
+      new Set(
+        vulnerabilities.map(item => new Date(item.dateAdded).getFullYear())
+      )
+    ).sort((a, b) => b - a) // Sort descending (newest first)
+
+    // 1. Top 10 Vendors (filtered by selected year)
+    const filteredVulnerabilitiesForYear = vulnerabilities.filter(
+      item => new Date(item.dateAdded).getFullYear() === selectedYear
+    )
+
+    const vendorCounts = filteredVulnerabilitiesForYear.reduce((acc, item) => {
       const vendor = item.vendorProject || 'Unknown'
       acc[vendor] = (acc[vendor] || 0) + 1
       return acc
@@ -26,8 +38,8 @@ export const CisaKevAnalytics = () => {
       .slice(0, 10)
       .map(([vendor, count]) => ({ vendor, count }))
 
-    // 2. Top 10 Products
-    const productCounts = vulnerabilities.reduce((acc, item) => {
+    // 2. Top 10 Products (filtered by selected year)
+    const productCounts = filteredVulnerabilitiesForYear.reduce((acc, item) => {
       const product = item.product || 'Unknown'
       acc[product] = (acc[product] || 0) + 1
       return acc
@@ -171,10 +183,11 @@ export const CisaKevAnalytics = () => {
       ageData,
       dueDateData,
       yearlyTrendData,
+      availableYears,
       totalCount: vulnerabilities.length,
       ransomwareCount: ransomwareStats.known,
     }
-  }, [vulnerabilities])
+  }, [vulnerabilities, selectedYear])
 
   if (isLoading) {
     return (
@@ -368,10 +381,23 @@ export const CisaKevAnalytics = () => {
 
         {/* Top Vendors */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <Package className="w-5 h-5 mr-2" />
-            影響を受けるベンダー Top 10
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
+              <Package className="w-5 h-5 mr-2" />
+              影響を受けるベンダー Top 10
+            </h3>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {analytics.availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}年
+                </option>
+              ))}
+            </select>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={analytics.topVendors} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -398,10 +424,23 @@ export const CisaKevAnalytics = () => {
 
         {/* Top Products */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <Package className="w-5 h-5 mr-2" />
-            影響を受ける製品 Top 10
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
+              <Package className="w-5 h-5 mr-2" />
+              影響を受ける製品 Top 10
+            </h3>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {analytics.availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}年
+                </option>
+              ))}
+            </select>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={analytics.topProducts} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
