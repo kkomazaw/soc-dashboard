@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { BarChart3, TrendingUp, Target, Globe, AlertCircle, RefreshCw } from 'lucide-react'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
-import { getNvdCves } from '@/services/api/nvdApi'
+import { getRecentNvdCves } from '@/services/api/nvdApi'
 import { getMatrix } from '@/services/api/attackApi'
 import { getMappingStats, getAllMappings, triggerMappingAll } from '@/services/api/mappingApi'
 import { AdvancedTrendsChart } from './AdvancedTrendsChart'
@@ -24,8 +24,8 @@ export const EnhancedDashboard = () => {
   })
 
   const { data: nvdData, isLoading: nvdLoading } = useQuery({
-    queryKey: ['nvd-cves'],
-    queryFn: getNvdCves,
+    queryKey: ['nvd-recent-cves', 90],
+    queryFn: () => getRecentNvdCves(90),
   })
 
   const { data: attackMatrix, isLoading: attackLoading } = useQuery({

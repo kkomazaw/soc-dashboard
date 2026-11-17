@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
-import { getNvdCves } from '@/services/api/nvdApi'
+import { getRecentNvdCves } from '@/services/api/nvdApi'
 import { fetchAllRssFeeds } from '@/services/api/rssParser'
 import {
   notifyCisaKev,
@@ -37,8 +37,8 @@ export const useNotificationMonitor = () => {
   })
 
   const { data: nvdData } = useQuery({
-    queryKey: ['nvd-cves'],
-    queryFn: getNvdCves,
+    queryKey: ['nvd-recent-cves', 1],
+    queryFn: () => getRecentNvdCves(1),
   })
 
   const { data: newsData } = useQuery({

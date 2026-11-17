@@ -4,7 +4,7 @@ import { useSearch } from '@/contexts/SearchContext'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
-import { getNvdCves } from '@/services/api/nvdApi'
+import { getRecentNvdCves } from '@/services/api/nvdApi'
 import { getAllRedHatData } from '@/services/api/redhatApi'
 import { AdvancedFilters } from './AdvancedFilters'
 import { FilterPresets } from './FilterPresets'
@@ -43,8 +43,8 @@ export const GlobalSearch = () => {
   })
 
   const { data: nvdData } = useQuery({
-    queryKey: ['nvd-cves'],
-    queryFn: getNvdCves,
+    queryKey: ['nvd-recent-cves', 90],
+    queryFn: () => getRecentNvdCves(90),
   })
 
   const { data: redhatData } = useQuery({

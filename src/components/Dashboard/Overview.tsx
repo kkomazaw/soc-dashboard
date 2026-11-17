@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { fetchCisaKev } from '@/services/api/cisaApi'
 import { getJvnVulnerabilities } from '@/services/api/jvnApi'
-import { getNvdCves } from '@/services/api/nvdApi'
+import { getRecentNvdCves } from '@/services/api/nvdApi'
 import { getAllRedHatData } from '@/services/api/redhatApi'
 import { fetchAllRssFeeds } from '@/services/api/rssParser'
 import { getApiStatus } from '@/services/api/iocApi'
@@ -45,8 +45,8 @@ export const Overview = ({ onViewChange }: OverviewProps) => {
   })
 
   const { data: nvdData } = useQuery({
-    queryKey: ['nvd-cves'],
-    queryFn: getNvdCves,
+    queryKey: ['nvd-recent-cves', 90],
+    queryFn: () => getRecentNvdCves(90),
   })
 
   const { data: redhatData } = useQuery({
