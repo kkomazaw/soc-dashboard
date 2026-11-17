@@ -174,50 +174,6 @@ export const NvdAnalytics = () => {
         count,
       }))
 
-    // 7. Yearly trend by severity (determine year range from data)
-    const publishedYears = cves.map(cve => new Date(cve.published).getFullYear())
-    const minYear = Math.min(...publishedYears)
-    const maxYear = Math.max(...publishedYears)
-
-    const yearlyData: Record<string, Record<string, number>> = {}
-
-    // Initialize years from min to max
-    for (let year = minYear; year <= maxYear; year++) {
-      yearlyData[year.toString()] = {
-        CRITICAL: 0,
-        HIGH: 0,
-        MEDIUM: 0,
-        LOW: 0,
-        NONE: 0,
-      }
-    }
-
-    // Count CVEs by year and severity
-    cves.forEach(cve => {
-      const year = new Date(cve.published).getFullYear().toString()
-      const severity = (cve.cvssSeverity?.toUpperCase() || 'NONE')
-
-      if (yearlyData[year]) {
-        if (yearlyData[year][severity] !== undefined) {
-          yearlyData[year][severity]++
-        } else {
-          yearlyData[year].NONE++
-        }
-      }
-    })
-
-    const yearlyTrendData = Object.entries(yearlyData)
-      .map(([year, severities]) => ({
-        year,
-        Critical: severities.CRITICAL,
-        High: severities.HIGH,
-        Medium: severities.MEDIUM,
-        Low: severities.LOW,
-        None: severities.NONE,
-        total: Object.values(severities).reduce((a, b) => a + b, 0),
-      }))
-      .sort((a, b) => a.year.localeCompare(b.year))
-
     // Calculate statistics
     const cvssScores = cves.filter(c => c.cvssScore).map(c => c.cvssScore!)
     const avgCvssScore = cvssScores.length > 0
@@ -233,7 +189,6 @@ export const NvdAnalytics = () => {
       ageData,
       statusData,
       versionData,
-      yearlyTrendData,
       totalCount: cves.length,
       criticalHighCount,
       avgCvssScore,
@@ -340,57 +295,6 @@ export const NvdAnalytics = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Yearly Trend (Full Width) */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2" />
-            年度別CVE発行数推移 - 重要度別
-          </h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={analytics.yearlyTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="year" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: '1px solid #374151',
-                  borderRadius: '0.5rem',
-                }}
-                cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
-              />
-              <Legend />
-              <Bar dataKey="Critical" stackId="a" fill="#dc2626" />
-              <Bar dataKey="High" stackId="a" fill="#f97316" />
-              <Bar dataKey="Medium" stackId="a" fill="#eab308" />
-              <Bar dataKey="Low" stackId="a" fill="#3b82f6" />
-              <Bar dataKey="None" stackId="a" fill="#6b7280" />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="mt-4 flex items-center justify-center gap-4 text-sm flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-600 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">Critical</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">High</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">Medium</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">Low</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gray-500 rounded"></div>
-              <span className="text-gray-600 dark:text-gray-400">None</span>
-            </div>
-          </div>
-        </div>
-
         {/* Monthly Trend */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
