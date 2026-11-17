@@ -66,7 +66,8 @@ interface NvdApiResponse {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
- * Fetch recent CVEs from NVD API with pagination support
+ * Fetch recent CVEs from NVD API with pagination and chunking support
+ * NVD API has a 120-day maximum date range limit, so we split requests into chunks
  * @param daysBack Number of days to look back (default: 7)
  * @param maxResults Maximum number of results to fetch per request (default: 2000, max: 2000)
  * @param fetchAll If true, fetches all available CVEs in the date range (default: true)
@@ -81,10 +82,31 @@ export const fetchRecentNvdCves = async (
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - daysBack)
 
-    const pubStartDate = startDate.toISOString()
-    const pubEndDate = endDate.toISOString()
+    console.log(`Fetching NVD CVEs for last ${daysBack} days...`)
 
-    console.log(`Fetching NVD CVEs published between ${pubStartDate} and ${pubEndDate}...`)
+    // NVD API has a 120-day maximum date range limit
+    const MAX_CHUNK_DAYS = 120
+    const chunks: Array<{ start: Date; end: Date }> = []
+
+    // Split into 120-day chunks if necessary
+    if (daysBack <= MAX_CHUNK_DAYS) {
+      chunks.push({ start: startDate, end: endDate })
+    } else {
+      let chunkStart = new Date(startDate)
+      while (chunkStart < endDate) {
+        const chunkEnd = new Date(chunkStart)
+        chunkEnd.setDate(chunkEnd.getDate() + MAX_CHUNK_DAYS)
+
+        if (chunkEnd > endDate) {
+          chunks.push({ start: new Date(chunkStart), end: new Date(endDate) })
+          break
+        } else {
+          chunks.push({ start: new Date(chunkStart), end: new Date(chunkEnd) })
+          chunkStart = new Date(chunkEnd)
+        }
+      }
+      console.log(`Split into ${chunks.length} chunks of ${MAX_CHUNK_DAYS} days each`)
+    }
 
     const headers: Record<string, string> = {
       'Accept': 'application/json',
@@ -96,67 +118,85 @@ export const fetchRecentNvdCves = async (
 
     const resultsPerPage = Math.min(maxResults, 2000) // NVD max is 2000
     let allCves: NvdCveItem[] = []
-    let startIndex = 0
-    let totalResults = 0
 
-    // First request to get total count
-    const firstResponse = await axios.get<NvdApiResponse>(NVD_API_URL, {
-      headers,
-      params: {
-        pubStartDate,
-        pubEndDate,
-        resultsPerPage,
-        startIndex: 0,
-      },
-      timeout: 30000,
-    })
+    // Process each chunk
+    for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
+      const chunk = chunks[chunkIdx]
+      const pubStartDate = chunk.start.toISOString()
+      const pubEndDate = chunk.end.toISOString()
 
-    if (!firstResponse.data.vulnerabilities) {
-      console.warn('No vulnerabilities found in NVD response')
-      return []
-    }
+      console.log(`\nChunk ${chunkIdx + 1}/${chunks.length}: ${pubStartDate} to ${pubEndDate}`)
 
-    totalResults = firstResponse.data.totalResults
-    allCves = firstResponse.data.vulnerabilities.map(v => v.cve)
-    console.log(`Fetched ${allCves.length}/${totalResults} CVEs from NVD...`)
+      let startIndex = 0
+      let totalResults = 0
+      let chunkCves: NvdCveItem[] = []
 
-    // If not fetching all or already got everything, return
-    if (!fetchAll || allCves.length >= totalResults) {
-      console.log(`Successfully fetched ${allCves.length} CVEs from NVD (total available: ${totalResults})`)
-      return allCves
-    }
+      // Rate limiting between chunks
+      if (chunkIdx > 0) {
+        await sleep(RATE_LIMIT_DELAY)
+      }
 
-    // Paginate through remaining results
-    startIndex = resultsPerPage
-    while (startIndex < totalResults) {
-      await sleep(RATE_LIMIT_DELAY) // Rate limiting
-
-      const response = await axios.get<NvdApiResponse>(NVD_API_URL, {
+      // First request to get total count for this chunk
+      const firstResponse = await axios.get<NvdApiResponse>(NVD_API_URL, {
         headers,
         params: {
           pubStartDate,
           pubEndDate,
           resultsPerPage,
-          startIndex,
+          startIndex: 0,
         },
         timeout: 30000,
       })
 
-      if (response.data.vulnerabilities && response.data.vulnerabilities.length > 0) {
-        const batch = response.data.vulnerabilities.map(v => v.cve)
-        allCves.push(...batch)
-        console.log(`Fetched ${allCves.length}/${totalResults} CVEs from NVD...`)
+      if (!firstResponse.data.vulnerabilities) {
+        console.warn(`No vulnerabilities found in chunk ${chunkIdx + 1}`)
+        continue
       }
 
-      startIndex += resultsPerPage
+      totalResults = firstResponse.data.totalResults
+      chunkCves = firstResponse.data.vulnerabilities.map(v => v.cve)
+      console.log(`  Fetched ${chunkCves.length}/${totalResults} CVEs...`)
+
+      // If fetching all, paginate through remaining results in this chunk
+      if (fetchAll && chunkCves.length < totalResults) {
+        startIndex = resultsPerPage
+
+        while (startIndex < totalResults) {
+          await sleep(RATE_LIMIT_DELAY) // Rate limiting
+
+          const response = await axios.get<NvdApiResponse>(NVD_API_URL, {
+            headers,
+            params: {
+              pubStartDate,
+              pubEndDate,
+              resultsPerPage,
+              startIndex,
+            },
+            timeout: 30000,
+          })
+
+          if (response.data.vulnerabilities && response.data.vulnerabilities.length > 0) {
+            const batch = response.data.vulnerabilities.map(v => v.cve)
+            chunkCves.push(...batch)
+            console.log(`  Fetched ${chunkCves.length}/${totalResults} CVEs...`)
+          }
+
+          startIndex += resultsPerPage
+        }
+      }
+
+      allCves.push(...chunkCves)
+      console.log(`Chunk ${chunkIdx + 1} complete: ${chunkCves.length} CVEs fetched`)
     }
 
-    console.log(`✅ Successfully fetched ${allCves.length} CVEs from NVD (total available: ${totalResults})`)
+    console.log(`✅ Successfully fetched ${allCves.length} total CVEs from NVD`)
     return allCves
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 403) {
         console.error('NVD API access forbidden. Check API key or rate limits.')
+      } else if (error.response?.status === 404 && error.response.headers?.message) {
+        console.error(`NVD API error: ${error.response.headers.message}`)
       } else if (error.response?.status === 503) {
         console.error('NVD API service unavailable. Try again later.')
       } else {
