@@ -185,50 +185,92 @@ export const TwitterTimeline = () => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Twitter className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              セキュリティ情報 統合フィード
-            </h2>
+      <div className="relative">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 dark:from-blue-700 dark:via-blue-600 dark:to-cyan-600"></div>
+
+        {/* Content */}
+        <div className="relative p-5">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              {/* Animated Icon */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/20 dark:bg-white/10 rounded-full blur-md"></div>
+                <div className="relative bg-white dark:bg-gray-800 p-2.5 rounded-full shadow-lg">
+                  <Twitter className="w-5 h-5 text-blue-500" />
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
+                <h2 className="text-lg font-bold text-white drop-shadow-sm">
+                  セキュリティ情報 統合フィード
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  {/* Live Indicator */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-xs font-medium text-white/90">LIVE</span>
+                  </div>
+                  <span className="text-xs text-white/70">•</span>
+                  <span className="text-xs text-white/90">15分ごとに自動更新</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-300 dark:border-gray-700 rounded hover:border-blue-500 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/90 dark:bg-gray-800/90 text-blue-700 dark:text-blue-300 hover:bg-white dark:hover:bg-gray-800 rounded-lg font-medium text-sm shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
               title="タイムラインを再読み込み"
             >
-              <RefreshCw className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
               再読み込み
             </button>
             <a
               href={TWITTER_LIST_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 text-white rounded-lg font-medium text-sm backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              title="Xでリストを開く"
             >
-              リストをXで開く
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-4 h-4" />
+              Xで開く
             </a>
           </div>
         </div>
+      </div>
+
+      {/* Alert Banners Container */}
+      <div className="border-b border-gray-200 dark:border-gray-800">
 
         {/* Rate Limit Warning */}
         {isRateLimited && timeUntilReset && (
-          <div className="mb-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex gap-2">
-              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+          <div className="mx-4 mt-4 mb-2 p-3.5 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl shadow-sm">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-800/40 rounded-lg">
+                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">
                   Twitter APIレート制限中
                 </p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                  次の更新まで: {timeUntilReset}
-                </p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                  Twitter APIの利用制限に達しました。制限は15分ごとにリセットされます。
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-xs text-yellow-700 dark:text-yellow-300">次の更新まで:</span>
+                  <span className="px-2 py-0.5 bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md font-mono text-xs font-semibold">
+                    {timeUntilReset}
+                  </span>
+                </div>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+                  制限は15分ごとにリセットされます
                 </p>
               </div>
             </div>
@@ -236,11 +278,13 @@ export const TwitterTimeline = () => {
         )}
 
         {/* Info Banner */}
-        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex gap-2">
-            <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              セキュリティ関連アカウントのTwitterリストから最新情報を表示しています（15分ごとに自動更新）
+        <div className="mx-4 mt-3 mb-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-700 rounded-xl">
+          <div className="flex gap-2.5">
+            <div className="flex-shrink-0">
+              <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+            </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              セキュリティ関連アカウントのTwitterリストから最新情報を表示
             </p>
           </div>
         </div>
@@ -348,15 +392,27 @@ export const TwitterTimeline = () => {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          {data?.tweets.length || 0}件のツイート • データ提供: X (Twitter) API v2
-          {data?.meta?.mock && (
-            <span className="ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded">
-              デモデータ
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-blue-50/30 dark:from-gray-800/50 dark:to-blue-900/10">
+        <div className="flex items-center justify-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">
+              {data?.tweets.length || 0}件のツイート
             </span>
+          </div>
+          <span className="text-gray-400 dark:text-gray-600">•</span>
+          <span className="text-gray-500 dark:text-gray-500">
+            X (Twitter) API v2
+          </span>
+          {data?.meta?.mock && (
+            <>
+              <span className="text-gray-400 dark:text-gray-600">•</span>
+              <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900 text-yellow-700 dark:text-yellow-300 rounded-md font-medium">
+                デモデータ
+              </span>
+            </>
           )}
-        </p>
+        </div>
       </div>
     </div>
   )
