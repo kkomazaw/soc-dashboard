@@ -109,6 +109,33 @@ export const getRecentCisaKev = async (hours: number = 24): Promise<CisaKev[]> =
 }
 
 /**
+ * Get CISA KEV vulnerabilities added in the last N days
+ */
+export const getRecentCisaKevByDays = async (days: number = 30): Promise<CisaKev[]> => {
+  try {
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+
+    const vulnerabilities = await prisma.cisaKev.findMany({
+      where: {
+        dateAdded: {
+          gte: cutoffDate,
+        },
+      },
+      orderBy: {
+        dateAdded: 'desc',
+      },
+    })
+
+    console.log(`Found ${vulnerabilities.length} CISA KEV entries from last ${days} days`)
+    return vulnerabilities
+  } catch (error) {
+    console.error('Failed to retrieve recent CISA KEV data:', error)
+    throw error
+  }
+}
+
+/**
  * Get database statistics
  */
 export const getCisaKevStats = async () => {
