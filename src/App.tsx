@@ -26,6 +26,7 @@ const CVETimeline = lazy(() => import('./components/CVETimeline/CVETimeline').th
 const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalytics').then(m => ({ default: m.CisaKevAnalytics })))
 const NvdAnalytics = lazy(() => import('./components/Analytics/NvdAnalytics').then(m => ({ default: m.NvdAnalytics })))
 const PatchList = lazy(() => import('./components/Patches/PatchList').then(m => ({ default: m.PatchList })))
+const SecurityIncidents = lazy(() => import('./components/Incidents/SecurityIncidents').then(m => ({ default: m.SecurityIncidents })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,8 @@ function AppContent() {
         return <IocSearch />
       case 'attack-matrix':
         return <AttackMatrix />
+      case 'security-incidents':
+        return <SecurityIncidents />
       default:
         return <Overview onViewChange={setCurrentView} />
     }

@@ -1,4 +1,4 @@
-import { Home, Shield, Newspaper, ChevronRight, Search, Target, TrendingUp, BarChart3, Filter, Calendar, Download } from 'lucide-react'
+import { Home, Shield, Newspaper, ChevronRight, Search, Target, TrendingUp, BarChart3, Filter, Calendar, Download, AlertTriangle } from 'lucide-react'
 
 interface SidebarProps {
   currentView: string
@@ -9,6 +9,7 @@ const menuItems = [
   { id: 'overview', label: 'Overview', icon: Home },
   { id: 'global-search', label: '脆弱性検索', icon: Filter },
   { id: 'cve-timeline', label: 'CVEタイムライン', icon: Calendar },
+  { id: 'security-incidents', label: '重大インシデント', icon: AlertTriangle },
   { id: 'vulnerabilities', label: '脆弱性一覧', icon: Shield, children: [
     { id: 'cisa-kev', label: 'CISA KEV' },
     { id: 'jvn', label: 'JVN & JPCERT/CC' },
