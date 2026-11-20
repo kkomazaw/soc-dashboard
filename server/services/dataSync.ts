@@ -19,6 +19,11 @@ import {
   getGeoThreatStats,
 } from './database/geoThreatDb'
 import {
+  fetchAndSyncSecurityIncidents,
+  initializeSecurityIncidents,
+} from './fetchers/securityIncidentFetcher'
+import { getSecurityIncidentStats } from './database/securityIncidentDb'
+import {
   hasCompletedInitialSync,
   markInitialSyncCompleted,
   updateLastSyncTimestamp,
@@ -235,6 +240,35 @@ export const syncGeoThreatData = async (): Promise<void> => {
     console.error('❌ Failed to sync geographic threat data:', error)
     // Don't throw error to avoid blocking other syncs
     console.warn('Continuing with other syncs despite geographic threat sync failure...')
+  }
+}
+
+/**
+ * Sync security incidents from threat intelligence feeds
+ */
+export const syncSecurityIncidentsData = async (): Promise<void> => {
+  try {
+    console.log('⏳ Starting security incidents sync...')
+
+    // Check if initial seed is needed
+    const stats = await getSecurityIncidentStats()
+
+    if (stats.total === 0) {
+      console.log('No incidents in database, initializing with historical data...')
+      await initializeSecurityIncidents()
+    } else {
+      // Just fetch and sync new incidents from feeds
+      await fetchAndSyncSecurityIncidents()
+    }
+
+    const updatedStats = await getSecurityIncidentStats()
+    console.log(
+      `✅ Security incidents sync complete: ${updatedStats.total} total, ${updatedStats.active} active, ${updatedStats.critical} critical`
+    )
+  } catch (error) {
+    console.error('❌ Failed to sync security incidents:', error)
+    // Don't throw error to avoid blocking other syncs
+    console.warn('Continuing with other syncs despite security incidents sync failure...')
   }
 }
 

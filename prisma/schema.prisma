@@ -318,6 +318,39 @@ model VendorPatch {
   @@map("vendor_patches")
 }
 
+// Security Incidents (major attack campaigns and incidents)
+model SecurityIncident {
+  id                 Int       @id @default(autoincrement())
+  incidentId         String    @unique @map("incident_id") // php2shell-2024, log4shell-2021, etc.
+  name               String
+  alternateName      String?   @map("alternate_name")
+  discoveryDate      DateTime  @map("discovery_date")
+  publicDisclosure   DateTime? @map("public_disclosure")
+  severity           String    // CRITICAL, HIGH, MEDIUM, LOW
+  category           String    // vulnerability, malware, apt, supply-chain, zero-day, ransomware
+  description        String
+  affectedSystems    String?   @map("affected_systems") // JSON string array
+  relatedCVEs        String?   @map("related_cves") // JSON string array
+  threatActors       String?   @map("threat_actors") // JSON string array
+  mitigations        String?   // JSON string array
+  references         String?   // JSON string array of {title, url} objects
+  impact             String?
+  status             String    @default("active") // active, contained, mitigated
+  source             String    @default("manual") // manual, cisa, news-feed, threat-intel
+  sourceUrl          String?   @map("source_url")
+  metadata           String?   // JSON string with additional details
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([incidentId])
+  @@index([discoveryDate])
+  @@index([severity])
+  @@index([category])
+  @@index([status])
+  @@index([source])
+  @@map("security_incidents")
+}
+
 // App Settings
 model AppSetting {
   id        Int      @id @default(autoincrement())

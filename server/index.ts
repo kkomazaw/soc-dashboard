@@ -16,6 +16,7 @@ import cveTimelineRouter from './routes/cveTimeline'
 import epssRouter from './routes/epss'
 import geoThreatRouter from './routes/geoThreat'
 import patchRouter from './routes/patch'
+import securityIncidentsRouter from './routes/securityIncidents'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -41,6 +42,7 @@ app.use('/api/cve', cveTimelineRouter)
 app.use('/api/epss', epssRouter)
 app.use('/api/geo-threat', geoThreatRouter)
 app.use('/api/patches', patchRouter)
+app.use('/api/security-incidents', securityIncidentsRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -111,6 +113,12 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/patches/:patchId`)
   console.log(`   - POST /api/patches/refresh`)
   console.log(`   - PATCH /api/patches/:patchId/status`)
+  console.log(`   - GET  /api/security-incidents`)
+  console.log(`   - GET  /api/security-incidents/stats`)
+  console.log(`   - GET  /api/security-incidents/:id`)
+  console.log(`   - POST /api/security-incidents/refresh`)
+  console.log(`   - POST /api/security-incidents/initialize`)
+  console.log(`   - PATCH /api/security-incidents/:id/status`)
   console.log(`   - GET  /health`)
   console.log('')
 

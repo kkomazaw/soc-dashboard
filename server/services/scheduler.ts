@@ -8,6 +8,7 @@ import {
   syncNewsData,
   syncEpssData,
   syncGeoThreatData,
+  syncSecurityIncidentsData,
 } from './dataSync'
 
 /**
@@ -89,6 +90,17 @@ export const initializeScheduler = () => {
       await syncGeoThreatData()
     } catch (error) {
       console.error('Scheduled geographic threat sync failed:', error)
+    }
+  })
+
+  // Sync security incidents every 12 hours
+  // Runs at: 00:00, 12:00
+  cron.schedule('0 0,12 * * *', async () => {
+    console.log('⏰ Running scheduled security incidents sync...')
+    try {
+      await syncSecurityIncidentsData()
+    } catch (error) {
+      console.error('Scheduled security incidents sync failed:', error)
     }
   })
 
