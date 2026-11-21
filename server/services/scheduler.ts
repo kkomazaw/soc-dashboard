@@ -121,6 +121,7 @@ export const initializeScheduler = () => {
   console.log('   - MITRE ATT&CK: Weekly (Sunday at 03:00)')
   console.log('   - EPSS: Daily (04:00)')
   console.log('   - Geographic Threats: Every 6 hours (05:00, 11:00, 17:00, 23:00)')
+  console.log('   - Security Incidents: Every 12 hours (00:00, 12:00)')
   console.log('   - News Feed: Every 1 hour (on the hour)')
   console.log('   - Initial sync: Starting in 3 seconds...')
 }
