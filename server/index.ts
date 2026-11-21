@@ -17,6 +17,11 @@ import epssRouter from './routes/epss'
 import geoThreatRouter from './routes/geoThreat'
 import patchRouter from './routes/patch'
 import securityIncidentsRouter from './routes/securityIncidents'
+import campaignsRouter from './routes/campaigns'
+import threatActorsRouter from './routes/threatActors'
+import malwareRouter from './routes/malware'
+import indicatorsRouter from './routes/indicators'
+import relationshipsRouter from './routes/relationships'
 import { initializeScheduler } from './services/scheduler'
 
 const app = express()
@@ -43,6 +48,11 @@ app.use('/api/epss', epssRouter)
 app.use('/api/geo-threat', geoThreatRouter)
 app.use('/api/patches', patchRouter)
 app.use('/api/security-incidents', securityIncidentsRouter)
+app.use('/api/campaigns', campaignsRouter)
+app.use('/api/threat-actors', threatActorsRouter)
+app.use('/api/malware', malwareRouter)
+app.use('/api/indicators', indicatorsRouter)
+app.use('/api/relationships', relationshipsRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -119,6 +129,35 @@ app.listen(PORT, () => {
   console.log(`   - POST /api/security-incidents/refresh`)
   console.log(`   - POST /api/security-incidents/initialize`)
   console.log(`   - PATCH /api/security-incidents/:id/status`)
+  console.log(`   - GET  /api/campaigns`)
+  console.log(`   - GET  /api/campaigns/stats`)
+  console.log(`   - GET  /api/campaigns/:id`)
+  console.log(`   - GET  /api/campaigns/:id/graph`)
+  console.log(`   - POST /api/campaigns`)
+  console.log(`   - PATCH /api/campaigns/:id`)
+  console.log(`   - DELETE /api/campaigns/:id`)
+  console.log(`   - GET  /api/threat-actors`)
+  console.log(`   - GET  /api/threat-actors/stats`)
+  console.log(`   - GET  /api/threat-actors/:id`)
+  console.log(`   - GET  /api/threat-actors/:id/campaigns`)
+  console.log(`   - POST /api/threat-actors`)
+  console.log(`   - DELETE /api/threat-actors/:id`)
+  console.log(`   - GET  /api/malware`)
+  console.log(`   - GET  /api/malware/stats`)
+  console.log(`   - GET  /api/malware/families`)
+  console.log(`   - GET  /api/malware/:id`)
+  console.log(`   - POST /api/malware`)
+  console.log(`   - DELETE /api/malware/:id`)
+  console.log(`   - GET  /api/indicators`)
+  console.log(`   - GET  /api/indicators/stats`)
+  console.log(`   - GET  /api/indicators/:id`)
+  console.log(`   - POST /api/indicators`)
+  console.log(`   - POST /api/indicators/bulk`)
+  console.log(`   - DELETE /api/indicators/:id`)
+  console.log(`   - GET  /api/relationships`)
+  console.log(`   - GET  /api/relationships/stats`)
+  console.log(`   - POST /api/relationships`)
+  console.log(`   - DELETE /api/relationships/:id`)
   console.log(`   - GET  /health`)
   console.log('')
 

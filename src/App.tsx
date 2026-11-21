@@ -27,6 +27,9 @@ const CisaKevAnalytics = lazy(() => import('./components/Analytics/CisaKevAnalyt
 const NvdAnalytics = lazy(() => import('./components/Analytics/NvdAnalytics').then(m => ({ default: m.NvdAnalytics })))
 const PatchList = lazy(() => import('./components/Patches/PatchList').then(m => ({ default: m.PatchList })))
 const SecurityIncidents = lazy(() => import('./components/Incidents/SecurityIncidents').then(m => ({ default: m.SecurityIncidents })))
+const Campaigns = lazy(() => import('./components/Campaigns').then(m => ({ default: m.Campaigns })))
+const ThreatActors = lazy(() => import('./components/ThreatActors').then(m => ({ default: m.ThreatActors })))
+const Malware = lazy(() => import('./components/Malware').then(m => ({ default: m.Malware })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +91,12 @@ function AppContent() {
         return <AttackMatrix />
       case 'security-incidents':
         return <SecurityIncidents />
+      case 'campaigns':
+        return <Campaigns />
+      case 'threat-actors':
+        return <ThreatActors />
+      case 'malware':
+        return <Malware />
       default:
         return <Overview onViewChange={setCurrentView} />
     }

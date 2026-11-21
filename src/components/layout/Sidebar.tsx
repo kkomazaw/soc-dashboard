@@ -1,4 +1,4 @@
-import { Home, Shield, Newspaper, ChevronRight, Search, Target, TrendingUp, BarChart3, Filter, Calendar, Download, AlertTriangle } from 'lucide-react'
+import { Home, Shield, Newspaper, ChevronRight, Search, Target, TrendingUp, BarChart3, Filter, Calendar, Download, AlertTriangle, Users, Bug } from 'lucide-react'
 
 interface SidebarProps {
   currentView: string
@@ -10,6 +10,9 @@ const menuItems = [
   { id: 'global-search', label: '脆弱性検索', icon: Filter },
   { id: 'cve-timeline', label: 'CVEタイムライン', icon: Calendar },
   { id: 'security-incidents', label: '重大インシデント', icon: AlertTriangle },
+  { id: 'campaigns', label: '重大キャンペーン', icon: Target },
+  { id: 'threat-actors', label: '脅威アクター', icon: Users },
+  { id: 'malware', label: 'マルウェア', icon: Bug },
   { id: 'vulnerabilities', label: '脆弱性一覧', icon: Shield, children: [
     { id: 'cisa-kev', label: 'CISA KEV' },
     { id: 'jvn', label: 'JVN & JPCERT/CC' },
@@ -24,7 +27,7 @@ const menuItems = [
   ]},
   { id: 'patch-management', label: 'パッチ管理', icon: Download },
   { id: 'ioc-search', label: 'IoC検索', icon: Search },
-  { id: 'attack-matrix', label: 'ATT&CK Matrix', icon: Target },
+  { id: 'attack-matrix', label: 'ATT&CK Matrix', icon: TrendingUp },
   { id: 'news', label: 'ニュース', icon: Newspaper },
 ]
 

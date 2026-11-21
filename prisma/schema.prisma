@@ -10,19 +10,19 @@ datasource db {
 
 // CISA KEV (Known Exploited Vulnerabilities)
 model CisaKev {
-  id                            Int       @id @default(autoincrement())
-  cveId                         String    @unique @map("cve_id")
-  vendorProject                 String?   @map("vendor_project")
-  product                       String?
-  vulnerabilityName             String?   @map("vulnerability_name")
-  dateAdded                     DateTime  @map("date_added")
-  shortDescription              String?   @map("short_description")
-  requiredAction                String?   @map("required_action")
-  dueDate                       DateTime? @map("due_date")
-  knownRansomwareCampaignUse    Boolean?  @map("known_ransomware_campaign_use")
-  notes                         String?
-  createdAt                     DateTime  @default(now()) @map("created_at")
-  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  id                         Int       @id @default(autoincrement())
+  cveId                      String    @unique @map("cve_id")
+  vendorProject              String?   @map("vendor_project")
+  product                    String?
+  vulnerabilityName          String?   @map("vulnerability_name")
+  dateAdded                  DateTime  @map("date_added")
+  shortDescription           String?   @map("short_description")
+  requiredAction             String?   @map("required_action")
+  dueDate                    DateTime? @map("due_date")
+  knownRansomwareCampaignUse Boolean?  @map("known_ransomware_campaign_use")
+  notes                      String?
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
 
   @@index([cveId])
   @@index([dateAdded])
@@ -31,20 +31,20 @@ model CisaKev {
 
 // JVN Vulnerabilities
 model JvnVulnerability {
-  id                Int       @id @default(autoincrement())
-  jvnId             String    @unique @map("jvn_id")
-  cveId             String?   @map("cve_id")
-  title             String
-  summary           String?
-  severity          String?
-  cvssScore         Float?    @map("cvss_score")
-  cvssVector        String?   @map("cvss_vector")
-  publishedDate     DateTime? @map("published_date")
-  lastModifiedDate  DateTime? @map("last_modified_date")
-  affectedProducts  String?   @map("affected_products") // JSON string
-  references        String?   // JSON string
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id               Int       @id @default(autoincrement())
+  jvnId            String    @unique @map("jvn_id")
+  cveId            String?   @map("cve_id")
+  title            String
+  summary          String?
+  severity         String?
+  cvssScore        Float?    @map("cvss_score")
+  cvssVector       String?   @map("cvss_vector")
+  publishedDate    DateTime? @map("published_date")
+  lastModifiedDate DateTime? @map("last_modified_date")
+  affectedProducts String?   @map("affected_products") // JSON string
+  references       String? // JSON string
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   @@index([jvnId])
   @@index([cveId])
@@ -54,19 +54,19 @@ model JvnVulnerability {
 
 // News Articles
 model NewsArticle {
-  id             Int       @id @default(autoincrement())
-  guid           String    @unique
-  title          String
-  link           String
-  description    String?
-  content        String?
-  author         String?
-  source         String    // 'bleepingcomputer', 'thehackernews', etc.
-  category       String?   // 'vulnerability', 'ransomware', 'apt', etc.
-  publishedDate  DateTime  @map("published_date")
-  isRead         Boolean   @default(false) @map("is_read")
-  isStarred      Boolean   @default(false) @map("is_starred")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  guid          String   @unique
+  title         String
+  link          String
+  description   String?
+  content       String?
+  author        String?
+  source        String // 'bleepingcomputer', 'thehackernews', etc.
+  category      String? // 'vulnerability', 'ransomware', 'apt', etc.
+  publishedDate DateTime @map("published_date")
+  isRead        Boolean  @default(false) @map("is_read")
+  isStarred     Boolean  @default(false) @map("is_starred")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@index([source])
   @@index([category])
@@ -77,21 +77,21 @@ model NewsArticle {
 
 // NVD CVE Data
 model NvdCve {
-  id                Int       @id @default(autoincrement())
-  cveId             String    @unique @map("cve_id")
-  sourceIdentifier  String?   @map("source_identifier")
-  published         DateTime
-  lastModified      DateTime  @map("last_modified")
-  vulnStatus        String?   @map("vuln_status")
-  description       String?
-  cvssScore         Float?    @map("cvss_score")
-  cvssSeverity      String?   @map("cvss_severity")
-  cvssVector        String?   @map("cvss_vector")
-  cvssVersion       String?   @map("cvss_version")
-  weaknesses        String?   // JSON string array of CWE IDs
-  references        String?   // JSON string array of reference URLs
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  cveId            String   @unique @map("cve_id")
+  sourceIdentifier String?  @map("source_identifier")
+  published        DateTime
+  lastModified     DateTime @map("last_modified")
+  vulnStatus       String?  @map("vuln_status")
+  description      String?
+  cvssScore        Float?   @map("cvss_score")
+  cvssSeverity     String?  @map("cvss_severity")
+  cvssVector       String?  @map("cvss_vector")
+  cvssVersion      String?  @map("cvss_version")
+  weaknesses       String? // JSON string array of CWE IDs
+  references       String? // JSON string array of reference URLs
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([cveId])
   @@index([published])
@@ -101,19 +101,19 @@ model NvdCve {
 
 // MITRE ATT&CK Techniques
 model AttackTechnique {
-  id                  Int       @id @default(autoincrement())
-  techniqueId         String    @unique @map("technique_id") // T1566, T1070, etc.
+  id                  Int      @id @default(autoincrement())
+  techniqueId         String   @unique @map("technique_id") // T1566, T1070, etc.
   name                String
   description         String?
-  tactics             String?   // JSON string array
-  platforms           String?   // JSON string array
-  dataSource          String?   @map("data_source") // JSON string array
-  detectionDifficulty String?   @map("detection_difficulty")
+  tactics             String? // JSON string array
+  platforms           String? // JSON string array
+  dataSource          String?  @map("data_source") // JSON string array
+  detectionDifficulty String?  @map("detection_difficulty")
   url                 String?
-  mitigations         String?   // JSON string array
-  subtechniques       String?   // JSON string array
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  mitigations         String? // JSON string array
+  subtechniques       String? // JSON string array
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@index([techniqueId])
   @@map("attack_techniques")
@@ -121,14 +121,14 @@ model AttackTechnique {
 
 // MITRE ATT&CK Tactics
 model AttackTactic {
-  id          Int       @id @default(autoincrement())
-  tacticId    String    @unique @map("tactic_id") // TA0001, TA0002, etc.
+  id          Int      @id @default(autoincrement())
+  tacticId    String   @unique @map("tactic_id") // TA0001, TA0002, etc.
   name        String
   description String?
-  shortName   String    @map("short_name") // initial-access, execution, etc.
-  techniques  String?   // JSON string array of technique IDs
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  shortName   String   @map("short_name") // initial-access, execution, etc.
+  techniques  String? // JSON string array of technique IDs
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@index([tacticId])
   @@index([shortName])
@@ -140,7 +140,7 @@ model CveAttackMapping {
   id           Int      @id @default(autoincrement())
   cveId        String   @map("cve_id") // CVE-2024-1234
   techniqueId  String   @map("technique_id") // T1566
-  source       String   // 'cisa', 'jvn', 'nvd'
+  source       String // 'cisa', 'jvn', 'nvd'
   confidence   String   @default("medium") // 'high', 'medium', 'low'
   matchType    String   @map("match_type") // 'keyword', 'tactic', 'manual'
   matchDetails String?  @map("match_details") // JSON string with match information
@@ -156,19 +156,19 @@ model CveAttackMapping {
 
 // Red Hat Security Advisories
 model RedHatAdvisory {
-  id                Int       @id @default(autoincrement())
-  advisoryId        String    @unique @map("advisory_id") // RHSA-2024:0001
-  advisoryType      String    @map("advisory_type") // RHSA, RHBA, RHEA
-  severity          String?   // Critical, Important, Moderate, Low
-  synopsis          String
-  description       String?
-  publicDate        DateTime  @map("public_date")
-  cves              String?   // JSON string array of CVE IDs
-  affectedPackages  String?   @map("affected_packages") // JSON string array
-  bugzilla          String?   // JSON string array of bugzilla entries
-  resourceUrl       String?   @map("resource_url")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  advisoryId       String   @unique @map("advisory_id") // RHSA-2024:0001
+  advisoryType     String   @map("advisory_type") // RHSA, RHBA, RHEA
+  severity         String? // Critical, Important, Moderate, Low
+  synopsis         String
+  description      String?
+  publicDate       DateTime @map("public_date")
+  cves             String? // JSON string array of CVE IDs
+  affectedPackages String?  @map("affected_packages") // JSON string array
+  bugzilla         String? // JSON string array of bugzilla entries
+  resourceUrl      String?  @map("resource_url")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([advisoryId])
   @@index([publicDate])
@@ -178,24 +178,24 @@ model RedHatAdvisory {
 
 // Red Hat CVE Data
 model RedHatCve {
-  id                Int       @id @default(autoincrement())
-  cveId             String    @unique @map("cve_id")
-  severity          String?
-  publicDate        DateTime  @map("public_date")
-  advisories        String?   // JSON string array of advisory IDs
-  bugzillaId        String?   @map("bugzilla_id")
-  bugzillaDesc      String?   @map("bugzilla_desc")
-  cvssScore         String?   @map("cvss_score")
-  cvssVector        String?   @map("cvss_vector")
-  cvss3Score        String?   @map("cvss3_score")
-  cvss3Vector       String?   @map("cvss3_vector")
-  cwe               String?
-  details           String?   // JSON string array
-  affectedPackages  String?   @map("affected_packages") // JSON string
-  resourceUrl       String?   @map("resource_url")
-  references        String?   // JSON string array
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  cveId            String   @unique @map("cve_id")
+  severity         String?
+  publicDate       DateTime @map("public_date")
+  advisories       String? // JSON string array of advisory IDs
+  bugzillaId       String?  @map("bugzilla_id")
+  bugzillaDesc     String?  @map("bugzilla_desc")
+  cvssScore        String?  @map("cvss_score")
+  cvssVector       String?  @map("cvss_vector")
+  cvss3Score       String?  @map("cvss3_score")
+  cvss3Vector      String?  @map("cvss3_vector")
+  cwe              String?
+  details          String? // JSON string array
+  affectedPackages String?  @map("affected_packages") // JSON string
+  resourceUrl      String?  @map("resource_url")
+  references       String? // JSON string array
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([cveId])
   @@index([publicDate])
@@ -205,14 +205,14 @@ model RedHatCve {
 
 // EPSS (Exploit Prediction Scoring System)
 model EpssScore {
-  id            Int      @id @default(autoincrement())
-  cveId         String   @unique @map("cve_id")
-  epss          Float    // EPSS score (0.0-1.0, probability of exploitation in next 30 days)
-  percentile    Float    // Percentile ranking (0.0-1.0)
-  modelVersion  String   @map("model_version")
-  scoreDate     DateTime @map("score_date") // Date this score was calculated
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  cveId        String   @unique @map("cve_id")
+  epss         Float // EPSS score (0.0-1.0, probability of exploitation in next 30 days)
+  percentile   Float // Percentile ranking (0.0-1.0)
+  modelVersion String   @map("model_version")
+  scoreDate    DateTime @map("score_date") // Date this score was calculated
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([cveId])
   @@index([epss])
@@ -222,20 +222,20 @@ model EpssScore {
 
 // IP Threat Reports (raw data from threat intelligence sources)
 model IpThreatReport {
-  id                Int       @id @default(autoincrement())
-  ipAddress         String    @map("ip_address")
-  countryCode       String    @map("country_code") // ISO 3166-1 alpha-2 (US, CN, RU, etc.)
-  country           String
-  threatType        String    @map("threat_type") // 'malware', 'phishing', 'scanning', 'ddos', etc.
-  severity          String    // 'critical', 'high', 'medium', 'low'
-  confidence        Int       // Confidence score 0-100
-  source            String    // 'abuseipdb', 'otx', 'internal'
-  sourceReportId    String?   @map("source_report_id") // External ID from the source
-  description       String?
-  reportedDate      DateTime  @map("reported_date")
-  metadata          String?   // JSON string with additional details
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  ipAddress      String   @map("ip_address")
+  countryCode    String   @map("country_code") // ISO 3166-1 alpha-2 (US, CN, RU, etc.)
+  country        String
+  threatType     String   @map("threat_type") // 'malware', 'phishing', 'scanning', 'ddos', etc.
+  severity       String // 'critical', 'high', 'medium', 'low'
+  confidence     Int // Confidence score 0-100
+  source         String // 'abuseipdb', 'otx', 'internal'
+  sourceReportId String?  @map("source_report_id") // External ID from the source
+  description    String?
+  reportedDate   DateTime @map("reported_date")
+  metadata       String? // JSON string with additional details
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@unique([ipAddress, source, reportedDate], name: "ipAddress_source_reportedDate")
   @@index([ipAddress])
@@ -248,20 +248,20 @@ model IpThreatReport {
 
 // Geographic Threat Aggregation (pre-calculated statistics by country)
 model GeoThreatAggregation {
-  id               Int       @id @default(autoincrement())
-  countryCode      String    @unique @map("country_code")
-  country          String
-  threatCount      Int       @map("threat_count")
-  criticalCount    Int       @map("critical_count")
-  highCount        Int       @map("high_count")
-  mediumCount      Int       @map("medium_count")
-  lowCount         Int       @map("low_count")
-  topThreats       String    @map("top_threats") // JSON string array of most common threat types
-  uniqueIps        Int       @map("unique_ips") // Count of unique malicious IPs
-  lastReportDate   DateTime  @map("last_report_date")
-  calculatedAt     DateTime  @map("calculated_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  countryCode    String   @unique @map("country_code")
+  country        String
+  threatCount    Int      @map("threat_count")
+  criticalCount  Int      @map("critical_count")
+  highCount      Int      @map("high_count")
+  mediumCount    Int      @map("medium_count")
+  lowCount       Int      @map("low_count")
+  topThreats     String   @map("top_threats") // JSON string array of most common threat types
+  uniqueIps      Int      @map("unique_ips") // Count of unique malicious IPs
+  lastReportDate DateTime @map("last_report_date")
+  calculatedAt   DateTime @map("calculated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@index([countryCode])
   @@index([threatCount])
@@ -271,44 +271,44 @@ model GeoThreatAggregation {
 
 // Vendor Patches (Microsoft, Cisco, VMware, Oracle, etc.)
 model VendorPatch {
-  id                Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   // Vendor Information
-  vendor            String    // Microsoft, RedHat, Cisco, VMware, Oracle, etc.
-  product           String    // Windows, Office, RHEL, IOS, ESXi, etc.
-  productVersion    String?   @map("product_version") // 10, 11, 2019, 8.0, etc.
+  vendor         String // Microsoft, RedHat, Cisco, VMware, Oracle, etc.
+  product        String // Windows, Office, RHEL, IOS, ESXi, etc.
+  productVersion String? @map("product_version") // 10, 11, 2019, 8.0, etc.
 
   // Patch Information
-  patchId           String    @unique @map("patch_id") // KB5001234, cisco-sa-*, VMSA-*, etc.
-  title             String
-  description       String?
-  severity          String    // Critical, Important/High, Moderate/Medium, Low
+  patchId     String  @unique @map("patch_id") // KB5001234, cisco-sa-*, VMSA-*, etc.
+  title       String
+  description String?
+  severity    String // Critical, Important/High, Moderate/Medium, Low
 
   // CVE Related
-  cveIds            String?   @map("cve_ids") // JSON array of CVE IDs
-  cveCount          Int       @default(0) @map("cve_count")
+  cveIds   String? @map("cve_ids") // JSON array of CVE IDs
+  cveCount Int     @default(0) @map("cve_count")
 
   // Release Information
-  releaseDate       DateTime  @map("release_date")
-  releaseType       String    @default("regular") @map("release_type") // regular, out-of-band, emergency
+  releaseDate DateTime @map("release_date")
+  releaseType String   @default("regular") @map("release_type") // regular, out-of-band, emergency
 
   // Links
-  bulletinUrl       String?   @map("bulletin_url")
-  downloadUrl       String?   @map("download_url")
-  kbArticleUrl      String?   @map("kb_article_url")
+  bulletinUrl  String? @map("bulletin_url")
+  downloadUrl  String? @map("download_url")
+  kbArticleUrl String? @map("kb_article_url")
 
   // Metadata
-  supersedes        String?   // JSON array of patch IDs this replaces
-  supersededBy      String?   @map("superseded_by") // JSON array of newer patches
-  affectedSystems   String?   @map("affected_systems") // JSON array of system names
+  supersedes      String? // JSON array of patch IDs this replaces
+  supersededBy    String? @map("superseded_by") // JSON array of newer patches
+  affectedSystems String? @map("affected_systems") // JSON array of system names
 
   // Deployment Status Tracking
-  deploymentStatus  String    @default("pending") @map("deployment_status") // pending, testing, deployed, skipped
-  deploymentDate    DateTime? @map("deployment_date")
-  deploymentNotes   String?   @map("deployment_notes")
+  deploymentStatus String    @default("pending") @map("deployment_status") // pending, testing, deployed, skipped
+  deploymentDate   DateTime? @map("deployment_date")
+  deploymentNotes  String?   @map("deployment_notes")
 
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([vendor])
   @@index([severity])
@@ -320,27 +320,27 @@ model VendorPatch {
 
 // Security Incidents (major attack campaigns and incidents)
 model SecurityIncident {
-  id                 Int       @id @default(autoincrement())
-  incidentId         String    @unique @map("incident_id") // php2shell-2024, log4shell-2021, etc.
-  name               String
-  alternateName      String?   @map("alternate_name")
-  discoveryDate      DateTime  @map("discovery_date")
-  publicDisclosure   DateTime? @map("public_disclosure")
-  severity           String    // CRITICAL, HIGH, MEDIUM, LOW
-  category           String    // vulnerability, malware, apt, supply-chain, zero-day, ransomware
-  description        String
-  affectedSystems    String?   @map("affected_systems") // JSON string array
-  relatedCVEs        String?   @map("related_cves") // JSON string array
-  threatActors       String?   @map("threat_actors") // JSON string array
-  mitigations        String?   // JSON string array
-  references         String?   // JSON string array of {title, url} objects
-  impact             String?
-  status             String    @default("active") // active, contained, mitigated
-  source             String    @default("manual") // manual, cisa, news-feed, threat-intel
-  sourceUrl          String?   @map("source_url")
-  metadata           String?   // JSON string with additional details
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id               Int       @id @default(autoincrement())
+  incidentId       String    @unique @map("incident_id") // php2shell-2024, log4shell-2021, etc.
+  name             String
+  alternateName    String?   @map("alternate_name")
+  discoveryDate    DateTime  @map("discovery_date")
+  publicDisclosure DateTime? @map("public_disclosure")
+  severity         String // CRITICAL, HIGH, MEDIUM, LOW
+  category         String // vulnerability, malware, apt, supply-chain, zero-day, ransomware
+  description      String
+  affectedSystems  String?   @map("affected_systems") // JSON string array
+  relatedCVEs      String?   @map("related_cves") // JSON string array
+  threatActors     String?   @map("threat_actors") // JSON string array
+  mitigations      String? // JSON string array
+  references       String? // JSON string array of {title, url} objects
+  impact           String?
+  status           String    @default("active") // active, contained, mitigated
+  source           String    @default("manual") // manual, cisa, news-feed, threat-intel
+  sourceUrl        String?   @map("source_url")
+  metadata         String? // JSON string with additional details
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   @@index([incidentId])
   @@index([discoveryDate])
@@ -349,6 +349,221 @@ model SecurityIncident {
   @@index([status])
   @@index([source])
   @@map("security_incidents")
+}
+
+// Campaign (Attack Campaign - STIX 2.1 compatible)
+model Campaign {
+  id          Int       @id @default(autoincrement())
+  campaignId  String    @unique @map("campaign_id") // campaign-apt29-2024, campaign-emotet-2023
+  name        String // "APT29 SolarWinds Supply Chain Attack"
+  aliases     String? // JSON array ["SolarWinds Hack", "Sunburst Attack"]
+  description String
+  firstSeen   DateTime  @map("first_seen")
+  lastSeen    DateTime? @map("last_seen")
+  objective   String? // "espionage", "financial-gain", "disruption"
+
+  // STIX 2.1 compatible fields
+  confidence     Int     @default(50) // 0-100
+  sophistication String? // "none", "minimal", "intermediate", "advanced", "expert", "innovator", "strategic"
+
+  // Status
+  status String @default("active") // "active", "inactive", "ongoing"
+
+  // Metadata
+  source    String  @default("manual") // "manual", "taxii", "otx", "misp"
+  sourceUrl String? @map("source_url")
+  metadata  String? // JSON string with additional STIX fields
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([campaignId])
+  @@index([firstSeen])
+  @@index([status])
+  @@index([objective])
+  @@map("campaigns")
+}
+
+// Threat Actor (STIX 2.1 compatible)
+model ThreatActor {
+  id          Int     @id @default(autoincrement())
+  actorId     String  @unique @map("actor_id") // threat-actor-apt29, threat-actor-lazarus
+  name        String // "APT29", "Lazarus Group"
+  aliases     String? // JSON array ["Cozy Bear", "The Dukes"]
+  description String?
+
+  // Classification
+  actorType         String  @map("actor_type") // "nation-state", "cybercrime", "hacktivist", "terrorist", "insider-threat"
+  sophistication    String? // "none", "minimal", "intermediate", "advanced", "expert", "innovator", "strategic"
+  resourceLevel     String? @map("resource_level") // "individual", "club", "contest", "team", "organization", "government"
+  primaryMotivation String? @map("primary_motivation") // "accidental", "coercion", "dominance", "ideology", "financial-gain", "revenge", "notoriety", "organizational-gain", "unpredictable"
+
+  // Attributes
+  origin    String? // Country code (RU, CN, KP, etc.)
+  firstSeen DateTime? @map("first_seen")
+  lastSeen  DateTime? @map("last_seen")
+
+  // Target information
+  targetedSectors   String? @map("targeted_sectors") // JSON array ["government", "finance", "healthcare"]
+  targetedCountries String? @map("targeted_countries") // JSON array ["US", "JP", "KR"]
+
+  // Metadata
+  source    String  @default("manual")
+  sourceUrl String? @map("source_url")
+  metadata  String? // JSON string
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([actorId])
+  @@index([actorType])
+  @@index([origin])
+  @@map("threat_actors")
+}
+
+// Malware (STIX 2.1 compatible)
+model Malware {
+  id          Int     @id @default(autoincrement())
+  malwareId   String  @unique @map("malware_id") // malware-emotet, malware-cobalt-strike
+  name        String // "Emotet", "Cobalt Strike"
+  aliases     String? // JSON array ["Heodo", "Mealybug"]
+  description String?
+
+  // Classification
+  malwareTypes String @map("malware_types") // JSON array ["trojan", "ransomware", "backdoor", "loader"]
+
+  // Technical features
+  architecture String? // "x86", "x64", "ARM"
+  capabilities String? // JSON array ["steals-credentials", "keylogger", "remote-access"]
+
+  // Detection information
+  fileHashes String? @map("file_hashes") // JSON object {md5: "", sha1: "", sha256: ""}
+  signatures String? // JSON array of YARA rules or detection signatures
+
+  // Family relationship
+  malwareFamily String? @map("malware_family") // "Emotet Family"
+  variantOf     String? @map("variant_of") // Reference to parent malware ID
+
+  // Timeline
+  firstSeen DateTime? @map("first_seen")
+  lastSeen  DateTime? @map("last_seen")
+
+  // Metadata
+  source    String  @default("manual")
+  sourceUrl String? @map("source_url")
+  metadata  String? // JSON string
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([malwareId])
+  @@index([malwareFamily])
+  @@map("malware")
+}
+
+// Indicator (IoC: Indicator of Compromise - STIX 2.1 compatible)
+model Indicator {
+  id          Int    @id @default(autoincrement())
+  indicatorId String @unique @map("indicator_id") // indicator-ip-1.2.3.4, indicator-domain-evil.com
+
+  // Type and value
+  indicatorType String @map("indicator_type") // "ipv4", "ipv6", "domain", "url", "email", "file-hash-md5", "file-hash-sha256"
+  value         String // "192.168.1.1", "evil.com", "abc123def456..."
+
+  // Pattern (STIX 2.1 format)
+  pattern     String? // "[ipv4-addr:value = '192.168.1.1']"
+  patternType String? @map("pattern_type") // "stix"
+
+  // Confidence
+  confidence Int       @default(50) // 0-100
+  validFrom  DateTime  @map("valid_from")
+  validUntil DateTime? @map("valid_until")
+
+  // Classification
+  threatType String? @map("threat_type") // "malware", "phishing", "c2", "exploit-kit"
+  severity   String? // "critical", "high", "medium", "low", "informational"
+
+  // Description
+  description String?
+
+  // Metadata
+  source    String  @default("manual") // "manual", "abuseipdb", "otx", "urlhaus"
+  sourceUrl String? @map("source_url")
+  metadata  String? // JSON string
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([indicatorId])
+  @@index([indicatorType])
+  @@index([value])
+  @@index([validFrom])
+  @@index([threatType])
+  @@map("indicators")
+}
+
+// Campaign Relationship (Entity relationships - STIX 2.1 SRO)
+model CampaignRelationship {
+  id Int @id @default(autoincrement())
+
+  // Source and target
+  sourceType String @map("source_type") // "campaign", "threat-actor", "malware", "indicator", "attack-pattern", "vulnerability"
+  sourceId   String @map("source_id") // Entity ID
+
+  targetType String @map("target_type") // "campaign", "threat-actor", "malware", "indicator", "attack-pattern", "vulnerability"
+  targetId   String @map("target_id") // Entity ID
+
+  // Relationship type (STIX 2.1 Relationship Types)
+  relationshipType String @map("relationship_type")
+  // Examples:
+  // - "uses": Campaign uses Malware, ThreatActor uses AttackTechnique
+  // - "attributed-to": Campaign attributed-to ThreatActor
+  // - "indicates": Indicator indicates Campaign/Malware/ThreatActor
+  // - "targets": Campaign targets Vulnerability
+  // - "variant-of": Malware variant-of Malware
+  // - "impersonates": ThreatActor impersonates Organization
+
+  // Confidence
+  confidence Int @default(50) // 0-100
+
+  // Description
+  description String?
+
+  // Timeline
+  firstSeen DateTime? @map("first_seen")
+  lastSeen  DateTime? @map("last_seen")
+
+  // Metadata
+  source   String  @default("manual")
+  metadata String? // JSON string
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([sourceType, sourceId, targetType, targetId, relationshipType])
+  @@index([sourceType, sourceId])
+  @@index([targetType, targetId])
+  @@index([relationshipType])
+  @@map("campaign_relationships")
+}
+
+// Target Sector (Industries/Sectors targeted by threat actors)
+model TargetSector {
+  id          Int     @id @default(autoincrement())
+  sectorId    String  @unique @map("sector_id") // "sector-finance", "sector-healthcare"
+  name        String // "金融", "医療", "政府"
+  nameEn      String  @map("name_en") // "finance", "healthcare", "government"
+  description String?
+
+  // Statistics
+  campaignCount    Int @default(0) @map("campaign_count")
+  threatActorCount Int @default(0) @map("threat_actor_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sectorId])
+  @@map("target_sectors")
 }
 
 // App Settings
